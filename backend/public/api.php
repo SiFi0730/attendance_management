@@ -47,6 +47,7 @@ use App\Controllers\HolidayCalendarController;
 use App\Controllers\ReportController;
 use App\Controllers\PayslipController;
 use App\Controllers\AuditLogController;
+use App\Controllers\DashboardController;
 use App\Controllers\DevController;
 
 // リクエストとレスポンスのインスタンス作成
@@ -186,6 +187,23 @@ $router->get('/audit-logs', [AuditLogController::class, 'index'], [
     }
 ]);
 $router->get('/audit-logs/{id}', [AuditLogController::class, 'show'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// ダッシュボード
+$router->get('/dashboard/stats', [DashboardController::class, 'stats'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/dashboard/today-punches', [DashboardController::class, 'todayPunches'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/dashboard/pending-requests', [DashboardController::class, 'pendingRequests'], [
     function (Request $req, Response $res) {
         return AuthMiddleware::requireAuth($req, $res);
     }

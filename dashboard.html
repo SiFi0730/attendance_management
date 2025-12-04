@@ -154,34 +154,32 @@
     <div class="grid grid-cols-4" style="margin-bottom: var(--spacing-xl);">
       <div class="stats-card">
         <div class="stats-card-label">今日の出勤者数</div>
-        <div class="stats-card-value">142</div>
-        <div class="stats-card-change positive">
-          <span>↑</span>
-          <span>前日比 +5</span>
+        <div class="stats-card-value" id="stat-today-attendance">-</div>
+        <div class="stats-card-change" id="stat-attendance-diff">
+          <span>-</span>
         </div>
       </div>
       <div class="stats-card">
         <div class="stats-card-label">未打刻者数</div>
-        <div class="stats-card-value">8</div>
-        <div class="stats-card-change negative">
-          <span>↓</span>
-          <span>前日比 -2</span>
+        <div class="stats-card-value" id="stat-no-punch">-</div>
+        <div class="stats-card-change" id="stat-no-punch-diff">
+          <span>-</span>
         </div>
       </div>
       <div class="stats-card">
         <div class="stats-card-label">承認待ち申請</div>
-        <div class="stats-card-value">23</div>
+        <div class="stats-card-value" id="stat-pending-requests">-</div>
         <div class="stats-card-change">
           <span>→</span>
-          <span>前日比 ±0</span>
+          <span>承認待ち</span>
         </div>
       </div>
       <div class="stats-card">
         <div class="stats-card-label">今月の平均労働時間</div>
-        <div class="stats-card-value">162.5h</div>
+        <div class="stats-card-value" id="stat-avg-work-hours">-</div>
         <div class="stats-card-change positive">
           <span>↑</span>
-          <span>目標達成率 98%</span>
+          <span>今月の平均</span>
         </div>
       </div>
     </div>
@@ -204,38 +202,11 @@
                 <th>ステータス</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="today-punches-tbody">
               <tr>
-                <td>山田太郎</td>
-                <td>営業部</td>
-                <td>09:00</td>
-                <td>18:00</td>
-                <td>8.0h</td>
-                <td><span class="badge badge-success">正常</span></td>
-              </tr>
-              <tr>
-                <td>佐藤花子</td>
-                <td>開発部</td>
-                <td>09:15</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge badge-warning">退勤未打刻</span></td>
-              </tr>
-              <tr>
-                <td>鈴木一郎</td>
-                <td>人事部</td>
-                <td>08:45</td>
-                <td>17:30</td>
-                <td>7.75h</td>
-                <td><span class="badge badge-success">正常</span></td>
-              </tr>
-              <tr>
-                <td>田中次郎</td>
-                <td>営業部</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge badge-error">未打刻</span></td>
+                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">
+                  データを読み込み中...
+                </td>
               </tr>
             </tbody>
           </table>
@@ -261,27 +232,10 @@
                 <th>操作</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="pending-requests-tbody">
               <tr>
-                <td>山田太郎</td>
-                <td>修正申請</td>
-                <td>2025-01-15</td>
-                <td>出勤時刻の修正（09:00 → 08:30）</td>
-                <td>2025-01-15 10:30</td>
-                <td>
-                  <a href="pages/approvals.html" class="btn btn-sm btn-primary">承認</a>
-                  <a href="pages/approvals.html" class="btn btn-sm btn-secondary">詳細</a>
-                </td>
-              </tr>
-              <tr>
-                <td>佐藤花子</td>
-                <td>修正申請</td>
-                <td>2025-01-14</td>
-                <td>退勤時刻の修正（18:00 → 19:00）</td>
-                <td>2025-01-14 19:15</td>
-                <td>
-                  <a href="pages/approvals.html" class="btn btn-sm btn-primary">承認</a>
-                  <a href="pages/approvals.html" class="btn btn-sm btn-secondary">詳細</a>
+                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">
+                  データを読み込み中...
                 </td>
               </tr>
             </tbody>
@@ -291,6 +245,204 @@
     </div>
   </main>
   <script src="scripts/common.js"></script>
+  <script>
+    // ============================================
+    // ダッシュボード - API連携
+    // ============================================
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      updateHeaderUserInfo();
+      await Promise.all([
+        loadDashboardStats(),
+        loadTodayPunches(),
+        loadPendingRequests()
+      ]);
+    });
+
+    // ダッシュボード統計を読み込み
+    async function loadDashboardStats() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/dashboard/stats`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          const stats = data.data;
+          
+          // 今日の出勤者数
+          document.getElementById('stat-today-attendance').textContent = stats.today_attendance || 0;
+          const attendanceDiffEl = document.getElementById('stat-attendance-diff');
+          if (stats.attendance_diff > 0) {
+            attendanceDiffEl.className = 'stats-card-change positive';
+            attendanceDiffEl.innerHTML = `<span>↑</span><span>前日比 +${stats.attendance_diff}</span>`;
+          } else if (stats.attendance_diff < 0) {
+            attendanceDiffEl.className = 'stats-card-change negative';
+            attendanceDiffEl.innerHTML = `<span>↓</span><span>前日比 ${stats.attendance_diff}</span>`;
+          } else {
+            attendanceDiffEl.className = 'stats-card-change';
+            attendanceDiffEl.innerHTML = `<span>→</span><span>前日比 ±0</span>`;
+          }
+
+          // 未打刻者数
+          document.getElementById('stat-no-punch').textContent = stats.no_punch_count || 0;
+          const noPunchDiffEl = document.getElementById('stat-no-punch-diff');
+          if (stats.no_punch_diff > 0) {
+            noPunchDiffEl.className = 'stats-card-change negative';
+            noPunchDiffEl.innerHTML = `<span>↑</span><span>前日比 +${stats.no_punch_diff}</span>`;
+          } else if (stats.no_punch_diff < 0) {
+            noPunchDiffEl.className = 'stats-card-change positive';
+            noPunchDiffEl.innerHTML = `<span>↓</span><span>前日比 ${stats.no_punch_diff}</span>`;
+          } else {
+            noPunchDiffEl.className = 'stats-card-change';
+            noPunchDiffEl.innerHTML = `<span>→</span><span>前日比 ±0</span>`;
+          }
+
+          // 承認待ち申請
+          document.getElementById('stat-pending-requests').textContent = stats.pending_requests || 0;
+          
+          // 今月の平均労働時間
+          document.getElementById('stat-avg-work-hours').textContent = `${stats.avg_work_hours || 0}h`;
+
+          // ヘッダーの申請バッジを更新
+          const requestBadge = document.querySelector('.header-nav-link[href="pages/requests.html"] .badge');
+          if (requestBadge) {
+            if (stats.pending_requests > 0) {
+              requestBadge.textContent = stats.pending_requests;
+              requestBadge.style.display = 'inline-block';
+            } else {
+              requestBadge.style.display = 'none';
+            }
+          }
+        } else {
+          console.error('ダッシュボード統計取得エラー:', data);
+        }
+      } catch (error) {
+        console.error('ダッシュボード統計の読み込みエラー:', error);
+      }
+    }
+
+    // 今日の打刻状況を読み込み
+    async function loadTodayPunches() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/dashboard/today-punches`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          const punches = data.data || [];
+          renderTodayPunches(punches);
+        } else {
+          console.error('今日の打刻状況取得エラー:', data);
+          const tbody = document.getElementById('today-punches-tbody');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">データの取得に失敗しました</td></tr>';
+          }
+        }
+      } catch (error) {
+        console.error('今日の打刻状況の読み込みエラー:', error);
+        const tbody = document.getElementById('today-punches-tbody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">データの取得に失敗しました</td></tr>';
+        }
+      }
+    }
+
+    // 今日の打刻状況を描画
+    function renderTodayPunches(punches) {
+      const tbody = document.getElementById('today-punches-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (punches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">打刻データがありません</td></tr>';
+        return;
+      }
+
+      punches.forEach(punch => {
+        const row = document.createElement('tr');
+        
+        // ステータスバッジ
+        let statusBadge = '';
+        if (punch.status === '正常') {
+          statusBadge = '<span class="badge badge-success">正常</span>';
+        } else if (punch.status === '退勤未打刻') {
+          statusBadge = '<span class="badge badge-warning">退勤未打刻</span>';
+        } else {
+          statusBadge = '<span class="badge badge-error">未打刻</span>';
+        }
+
+        row.innerHTML = `
+          <td>${punch.employee_name}</td>
+          <td>${punch.department_name || '-'}</td>
+          <td>${punch.clock_in || '-'}</td>
+          <td>${punch.clock_out || '-'}</td>
+          <td>${punch.work_hours ? punch.work_hours + 'h' : '-'}</td>
+          <td>${statusBadge}</td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // 承認待ち申請を読み込み
+    async function loadPendingRequests() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/dashboard/pending-requests?limit=10`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          const requests = data.data || [];
+          renderPendingRequests(requests);
+        } else {
+          console.error('承認待ち申請取得エラー:', data);
+          const tbody = document.getElementById('pending-requests-tbody');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">データの取得に失敗しました</td></tr>';
+          }
+        }
+      } catch (error) {
+        console.error('承認待ち申請の読み込みエラー:', error);
+        const tbody = document.getElementById('pending-requests-tbody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">データの取得に失敗しました</td></tr>';
+        }
+      }
+    }
+
+    // 承認待ち申請を描画
+    function renderPendingRequests(requests) {
+      const tbody = document.getElementById('pending-requests-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (requests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">承認待ちの申請がありません</td></tr>';
+        return;
+      }
+
+      requests.forEach(request => {
+        const row = document.createElement('tr');
+        
+        const createdAt = new Date(request.created_at);
+        const createdAtStr = createdAt.toLocaleString('ja-JP');
+
+        row.innerHTML = `
+          <td>${request.employee_name}</td>
+          <td>${request.type_label}</td>
+          <td>${request.target_date}</td>
+          <td>${request.content}</td>
+          <td>${createdAtStr}</td>
+          <td>
+            <a href="pages/approvals.html" class="btn btn-sm btn-primary">承認</a>
+            <a href="pages/approvals.html" class="btn btn-sm btn-secondary">詳細</a>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+  </script>
 </body>
 </html>
 
