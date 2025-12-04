@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>給与明細 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <style>
+    /* 給与明細専用スタイル */
+    .payslip-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .payslip-list {
+      display: grid;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .payslip-item {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-lg);
+      padding: var(--spacing-lg);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition-base), transform var(--transition-base);
+      cursor: pointer;
+    }
+
+    .payslip-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .payslip-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .payslip-item-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .payslip-item-period {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .payslip-item-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-md);
+    }
+
+    .payslip-item-detail {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .payslip-item-detail-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .payslip-item-detail-value {
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .payslip-item-detail-value.amount {
+      font-size: var(--font-size-lg);
+      color: var(--color-primary);
+    }
+
+    /* 給与明細詳細（印刷用） */
+    .payslip-detail {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-md);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .payslip-detail-header {
+      text-align: center;
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .payslip-detail-company {
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .payslip-detail-title {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .payslip-detail-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .payslip-detail-info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .payslip-detail-info-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .payslip-detail-info-value {
+      font-size: var(--font-size-base);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .payslip-detail-section {
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .payslip-detail-section-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .payslip-detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .payslip-detail-table th {
+      text-align: left;
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .payslip-detail-table td {
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .payslip-detail-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .payslip-detail-table .text-right {
+      text-align: right;
+    }
+
+    .payslip-detail-table .amount {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .payslip-detail-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      margin-top: var(--spacing-lg);
+    }
+
+    .payslip-detail-total-label {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .payslip-detail-total-amount {
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .payslip-detail-footer {
+      margin-top: var(--spacing-xl);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .payslip-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-xl);
+      justify-content: center;
+    }
+
+    /* 印刷用スタイル */
+    @media print {
+      body {
+        background-color: white;
+      }
+
+      .header,
+      .sidebar,
+      .page-header,
+      .payslip-actions,
+      .filter-bar {
+        display: none !important;
+      }
+
+      .main-content {
+        margin: 0;
+        padding: 0;
+      }
+
+      .payslip-detail {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .payslip-detail-header {
+        page-break-after: avoid;
+      }
+
+      .payslip-detail-section {
+        page-break-inside: avoid;
+      }
+    }
+
+    /* 空状態 */
+    .payslip-empty {
+      text-align: center;
+      padding: var(--spacing-2xl);
+      color: var(--text-tertiary);
+    }
+
+    .payslip-empty-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-md);
+      opacity: 0.5;
+    }
+
+    .payslip-empty-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .payslip-empty-description {
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--spacing-lg);
+    }
+  </style>
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">給与明細</h1>
+      <p class="page-description">給与明細の確認・印刷ができます</p>
+    </div>
+
+    <!-- フィルタバー -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label">従業員:</label>
+        <select id="employee-filter" class="form-select filter-input">
+          <option value="">すべて</option>
+          <option value="self" selected>自分</option>
+          <option value="emp001">山田太郎</option>
+          <option value="emp002">佐藤花子</option>
+          <option value="emp003">鈴木一郎</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">支給年月:</label>
+        <input type="month" id="period-filter" class="form-input filter-input" value="2025-01">
+      </div>
+      <div class="filter-group">
+        <button id="search-btn" class="btn btn-primary">検索</button>
+      </div>
+    </div>
+
+    <!-- 給与明細一覧 -->
+    <div id="payslip-list-view" class="payslip-container">
+      <div class="payslip-list">
+        <div class="payslip-item" data-payslip-id="payslip-001">
+          <div class="payslip-item-header">
+            <div>
+              <div class="payslip-item-title">2025年1月分 給与明細</div>
+              <div class="payslip-item-period">支給日: 2025年2月25日</div>
+            </div>
+            <span class="badge badge-success">確定</span>
+          </div>
+          <div class="payslip-item-details">
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">基本給</span>
+              <span class="payslip-item-detail-value">¥300,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">残業手当</span>
+              <span class="payslip-item-detail-value">¥12,500</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">控除合計</span>
+              <span class="payslip-item-detail-value">¥-65,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">差引支給額</span>
+              <span class="payslip-item-detail-value amount">¥247,500</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="payslip-item" data-payslip-id="payslip-002">
+          <div class="payslip-item-header">
+            <div>
+              <div class="payslip-item-title">2024年12月分 給与明細</div>
+              <div class="payslip-item-period">支給日: 2025年1月25日</div>
+            </div>
+            <span class="badge badge-success">確定</span>
+          </div>
+          <div class="payslip-item-details">
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">基本給</span>
+              <span class="payslip-item-detail-value">¥300,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">残業手当</span>
+              <span class="payslip-item-detail-value">¥8,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">控除合計</span>
+              <span class="payslip-item-detail-value">¥-65,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">差引支給額</span>
+              <span class="payslip-item-detail-value amount">¥243,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="payslip-item" data-payslip-id="payslip-003">
+          <div class="payslip-item-header">
+            <div>
+              <div class="payslip-item-title">2024年11月分 給与明細</div>
+              <div class="payslip-item-period">支給日: 2024年12月25日</div>
+            </div>
+            <span class="badge badge-success">確定</span>
+          </div>
+          <div class="payslip-item-details">
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">基本給</span>
+              <span class="payslip-item-detail-value">¥300,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">残業手当</span>
+              <span class="payslip-item-detail-value">¥15,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">控除合計</span>
+              <span class="payslip-item-detail-value">¥-65,000</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">差引支給額</span>
+              <span class="payslip-item-detail-value amount">¥250,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 給与明細詳細（非表示） -->
+    <div id="payslip-detail-view" class="payslip-container" style="display: none;">
+      <div class="payslip-detail">
+        <!-- ヘッダー -->
+        <div class="payslip-detail-header">
+          <div class="payslip-detail-company">株式会社サンプル</div>
+          <div class="payslip-detail-title">給与明細書</div>
+        </div>
+
+        <!-- 基本情報 -->
+        <div class="payslip-detail-info">
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">支給年月</span>
+            <span class="payslip-detail-info-value" id="detail-period">2025年1月分</span>
+          </div>
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">支給日</span>
+            <span class="payslip-detail-info-value" id="detail-payment-date">2025年2月25日</span>
+          </div>
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">従業員コード</span>
+            <span class="payslip-detail-info-value" id="detail-employee-code">EMP001</span>
+          </div>
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">従業員名</span>
+            <span class="payslip-detail-info-value" id="detail-employee-name">山田 太郎</span>
+          </div>
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">部署</span>
+            <span class="payslip-detail-info-value" id="detail-department">営業部</span>
+          </div>
+          <div class="payslip-detail-info-item">
+            <span class="payslip-detail-info-label">雇用形態</span>
+            <span class="payslip-detail-info-value" id="detail-employment-type">正社員</span>
+          </div>
+        </div>
+
+        <!-- 支給項目 -->
+        <div class="payslip-detail-section">
+          <div class="payslip-detail-section-title">支給項目</div>
+          <table class="payslip-detail-table">
+            <thead>
+              <tr>
+                <th>項目名</th>
+                <th>数量</th>
+                <th>単価</th>
+                <th class="text-right">金額</th>
+              </tr>
+            </thead>
+            <tbody id="detail-payment-items">
+              <tr>
+                <td>基本給</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥300,000</td>
+              </tr>
+              <tr>
+                <td>残業手当</td>
+                <td>2.5時間</td>
+                <td>¥5,000</td>
+                <td class="text-right amount">¥12,500</td>
+              </tr>
+              <tr>
+                <td>通勤手当</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥15,000</td>
+              </tr>
+              <tr>
+                <td>家族手当</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥10,000</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="font-weight: 600; text-align: right;">支給合計</td>
+                <td class="text-right amount" id="detail-payment-total">¥337,500</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- 控除項目 -->
+        <div class="payslip-detail-section">
+          <div class="payslip-detail-section-title">控除項目</div>
+          <table class="payslip-detail-table">
+            <thead>
+              <tr>
+                <th>項目名</th>
+                <th>数量</th>
+                <th>単価</th>
+                <th class="text-right">金額</th>
+              </tr>
+            </thead>
+            <tbody id="detail-deduction-items">
+              <tr>
+                <td>健康保険料</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥-18,000</td>
+              </tr>
+              <tr>
+                <td>厚生年金保険料</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥-27,000</td>
+              </tr>
+              <tr>
+                <td>雇用保険料</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥-900</td>
+              </tr>
+              <tr>
+                <td>所得税</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥-8,000</td>
+              </tr>
+              <tr>
+                <td>住民税</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right amount">¥-11,100</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="font-weight: 600; text-align: right;">控除合計</td>
+                <td class="text-right amount" id="detail-deduction-total">¥-65,000</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- 差引支給額 -->
+        <div class="payslip-detail-total">
+          <span class="payslip-detail-total-label">差引支給額</span>
+          <span class="payslip-detail-total-amount" id="detail-net-payment">¥272,500</span>
+        </div>
+
+        <!-- フッター -->
+        <div class="payslip-detail-footer">
+          <p>この給与明細は電子データとして保存されています。</p>
+          <p>印刷日時: <span id="detail-print-date"></span></p>
+        </div>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="payslip-actions">
+        <button id="print-btn" class="btn btn-primary">印刷</button>
+        <button id="download-btn" class="btn btn-secondary">PDFダウンロード</button>
+        <button id="back-btn" class="btn btn-secondary">一覧に戻る</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 給与明細一覧のアイテムクリック処理
+    document.addEventListener('DOMContentLoaded', function() {
+      const payslipItems = document.querySelectorAll('.payslip-item');
+      const listView = document.getElementById('payslip-list-view');
+      const detailView = document.getElementById('payslip-detail-view');
+
+      payslipItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+          const payslipId = this.getAttribute('data-payslip-id');
+          showPayslipDetail(payslipId);
+        });
+      });
+
+      // 戻るボタン
+      const backBtn = document.getElementById('back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          listView.style.display = 'block';
+          detailView.style.display = 'none';
+        });
+      }
+
+      // 印刷ボタン
+      const printBtn = document.getElementById('print-btn');
+      if (printBtn) {
+        printBtn.addEventListener('click', function() {
+          window.print();
+        });
+      }
+
+      // PDFダウンロードボタン（将来実装）
+      const downloadBtn = document.getElementById('download-btn');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+          alert('PDFダウンロード機能は今後実装予定です。');
+        });
+      }
+
+      // 印刷日時の設定
+      const printDateElement = document.getElementById('detail-print-date');
+      if (printDateElement) {
+        const now = getCurrentTime();
+        printDateElement.textContent = now.toLocaleString('ja-JP');
+      }
+
+      // 検索ボタン
+      const searchBtn = document.getElementById('search-btn');
+      if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+          const employeeFilter = document.getElementById('employee-filter').value;
+          const periodFilter = document.getElementById('period-filter').value;
+          // 実際の実装では、ここでAPIを呼び出してフィルタリング
+          console.log('検索:', { employee: employeeFilter, period: periodFilter });
+        });
+      }
+    });
+
+    // 給与明細詳細を表示
+    function showPayslipDetail(payslipId) {
+      const listView = document.getElementById('payslip-list-view');
+      const detailView = document.getElementById('payslip-detail-view');
+
+      // 実際の実装では、payslipIdに基づいてAPIからデータを取得
+      // ここではサンプルデータを使用
+      updatePayslipDetail({
+        period: '2025年1月分',
+        paymentDate: '2025年2月25日',
+        employeeCode: 'EMP001',
+        employeeName: '山田 太郎',
+        department: '営業部',
+        employmentType: '正社員',
+        paymentItems: [
+          { name: '基本給', quantity: '-', unitPrice: '-', amount: 300000 },
+          { name: '残業手当', quantity: '2.5時間', unitPrice: '¥5,000', amount: 12500 },
+          { name: '通勤手当', quantity: '-', unitPrice: '-', amount: 15000 },
+          { name: '家族手当', quantity: '-', unitPrice: '-', amount: 10000 }
+        ],
+        deductionItems: [
+          { name: '健康保険料', quantity: '-', unitPrice: '-', amount: 18000 },
+          { name: '厚生年金保険料', quantity: '-', unitPrice: '-', amount: 27000 },
+          { name: '雇用保険料', quantity: '-', unitPrice: '-', amount: 900 },
+          { name: '所得税', quantity: '-', unitPrice: '-', amount: 8000 },
+          { name: '住民税', quantity: '-', unitPrice: '-', amount: 11100 }
+        ]
+      });
+
+      listView.style.display = 'none';
+      detailView.style.display = 'block';
+    }
+
+    // 給与明細詳細を更新
+    function updatePayslipDetail(data) {
+      document.getElementById('detail-period').textContent = data.period;
+      document.getElementById('detail-payment-date').textContent = data.paymentDate;
+      document.getElementById('detail-employee-code').textContent = data.employeeCode;
+      document.getElementById('detail-employee-name').textContent = data.employeeName;
+      document.getElementById('detail-department').textContent = data.department;
+      document.getElementById('detail-employment-type').textContent = data.employmentType;
+
+      // 支給項目を更新
+      const paymentItemsTbody = document.getElementById('detail-payment-items');
+      paymentItemsTbody.innerHTML = '';
+      let paymentTotal = 0;
+      data.paymentItems.forEach(function(item) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.quantity}</td>
+          <td>${item.unitPrice}</td>
+          <td class="text-right amount">¥${item.amount.toLocaleString()}</td>
+        `;
+        paymentItemsTbody.appendChild(row);
+        paymentTotal += item.amount;
+      });
+      document.getElementById('detail-payment-total').textContent = '¥' + paymentTotal.toLocaleString();
+
+      // 控除項目を更新
+      const deductionItemsTbody = document.getElementById('detail-deduction-items');
+      deductionItemsTbody.innerHTML = '';
+      let deductionTotal = 0;
+      data.deductionItems.forEach(function(item) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.quantity}</td>
+          <td>${item.unitPrice}</td>
+          <td class="text-right amount">¥-${item.amount.toLocaleString()}</td>
+        `;
+        deductionItemsTbody.appendChild(row);
+        deductionTotal += item.amount;
+      });
+      document.getElementById('detail-deduction-total').textContent = '¥-' + deductionTotal.toLocaleString();
+
+      // 差引支給額を更新
+      const netPayment = paymentTotal - deductionTotal;
+      document.getElementById('detail-net-payment').textContent = '¥' + netPayment.toLocaleString();
+    }
+  </script>
+  <script src="../scripts/common.js"></script>
+</body>
+</html>
+

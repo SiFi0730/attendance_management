@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダッシュボード - 勤怠管理システム</title>
+  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="dashboard.html" class="header-nav-link active">ダッシュボード</a>
+          <a href="pages/punch.html" class="header-nav-link">打刻</a>
+          <a href="pages/gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="pages/reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="pages/requests.html" class="header-nav-link" style="position: relative;">
+          申請
+          <span class="badge badge-error" style="position: absolute; top: -8px; right: -8px; font-size: 10px; padding: 2px 6px;">3</span>
+        </a>
+        <button id="time-mode-button" onclick="showTimeModeModal()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">現実時間</button>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="pages/profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 時間モード設定モーダル -->
+  <div id="time-mode-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 class="modal-title">時間モード設定</h2>
+        <button class="modal-close" onclick="closeTimeModeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer; margin-bottom: var(--spacing-md);">
+            <input type="radio" name="time-mode" id="time-mode-realtime" value="realtime" checked style="cursor: pointer;">
+            <span>現実時間を採用</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer; margin-bottom: var(--spacing-md);">
+            <input type="radio" name="time-mode" id="time-mode-virtual" value="virtual" style="cursor: pointer;">
+            <span>仮想時間を採用</span>
+          </label>
+        </div>
+        
+        <div id="virtual-time-settings" style="display: none; margin-top: var(--spacing-lg); padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+          <div class="form-group">
+            <label for="virtual-date" class="form-label required">日付</label>
+            <input type="date" id="virtual-date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="virtual-time" class="form-label required">時刻</label>
+            <input type="time" id="virtual-time" class="form-input" required>
+          </div>
+          <div class="form-help" style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+            注意: 仮想時間は過去の時間に戻すことはできません。
+          </div>
+        </div>
+        
+        <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">
+          <button onclick="resetDatabase()" class="btn btn-sm btn-danger" style="width: 100%;">データベースをリセット</button>
+          <div class="form-help" style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: var(--spacing-xs);">
+            すべてのデータを削除し、スキーマを再適用します。時間モードも現実時間にリセットされます。
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="saveTimeMode()" class="btn btn-primary">保存</button>
+        <button onclick="closeTimeModeModal()" class="btn btn-secondary">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="dashboard.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="pages/audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">ダッシュボード</h1>
+      <p class="page-description">今日の勤怠状況と統計情報を確認できます</p>
+    </div>
+
+    <!-- 統計カード -->
+    <div class="grid grid-cols-4" style="margin-bottom: var(--spacing-xl);">
+      <div class="stats-card">
+        <div class="stats-card-label">今日の出勤者数</div>
+        <div class="stats-card-value">142</div>
+        <div class="stats-card-change positive">
+          <span>↑</span>
+          <span>前日比 +5</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-label">未打刻者数</div>
+        <div class="stats-card-value">8</div>
+        <div class="stats-card-change negative">
+          <span>↓</span>
+          <span>前日比 -2</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-label">承認待ち申請</div>
+        <div class="stats-card-value">23</div>
+        <div class="stats-card-change">
+          <span>→</span>
+          <span>前日比 ±0</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-label">今月の平均労働時間</div>
+        <div class="stats-card-value">162.5h</div>
+        <div class="stats-card-change positive">
+          <span>↑</span>
+          <span>目標達成率 98%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日の打刻状況 -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header">
+        <h2 class="card-title">今日の打刻状況</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>従業員名</th>
+                <th>部署</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>実働時間</th>
+                <th>ステータス</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>山田太郎</td>
+                <td>営業部</td>
+                <td>09:00</td>
+                <td>18:00</td>
+                <td>8.0h</td>
+                <td><span class="badge badge-success">正常</span></td>
+              </tr>
+              <tr>
+                <td>佐藤花子</td>
+                <td>開発部</td>
+                <td>09:15</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="badge badge-warning">退勤未打刻</span></td>
+              </tr>
+              <tr>
+                <td>鈴木一郎</td>
+                <td>人事部</td>
+                <td>08:45</td>
+                <td>17:30</td>
+                <td>7.75h</td>
+                <td><span class="badge badge-success">正常</span></td>
+              </tr>
+              <tr>
+                <td>田中次郎</td>
+                <td>営業部</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="badge badge-error">未打刻</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 承認待ち申請 -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">承認待ち申請</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>申請者</th>
+                <th>申請種類</th>
+                <th>対象日</th>
+                <th>申請内容</th>
+                <th>申請日時</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>山田太郎</td>
+                <td>修正申請</td>
+                <td>2025-01-15</td>
+                <td>出勤時刻の修正（09:00 → 08:30）</td>
+                <td>2025-01-15 10:30</td>
+                <td>
+                  <a href="pages/approvals.html" class="btn btn-sm btn-primary">承認</a>
+                  <a href="pages/approvals.html" class="btn btn-sm btn-secondary">詳細</a>
+                </td>
+              </tr>
+              <tr>
+                <td>佐藤花子</td>
+                <td>修正申請</td>
+                <td>2025-01-14</td>
+                <td>退勤時刻の修正（18:00 → 19:00）</td>
+                <td>2025-01-14 19:15</td>
+                <td>
+                  <a href="pages/approvals.html" class="btn btn-sm btn-primary">承認</a>
+                  <a href="pages/approvals.html" class="btn btn-sm btn-secondary">詳細</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="scripts/common.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,38 @@
+# Composer
+/vendor/
+composer.phar
+composer.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Database
+*.sqlite
+*.db
+
+# Cookies (if contains sensitive data)
+cookies.txt
+

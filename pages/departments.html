@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>部署管理 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="breadcrumb">
+      <span class="breadcrumb-item"><a href="employees.html">従業員管理</a></span>
+      <span class="breadcrumb-item active">部署管理</span>
+    </div>
+
+    <div class="page-header">
+      <h1 class="page-title">部署管理</h1>
+      <p class="page-description">部署の一覧・登録・編集を行います</p>
+      <div class="page-actions">
+        <a href="#modal-new-department" class="btn btn-primary">部署を追加</a>
+      </div>
+    </div>
+
+    <!-- 部署一覧 -->
+    <div class="card">
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>部署名</th>
+                <th>親部署</th>
+                <th>従業員数</th>
+                <th>作成日</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>営業部</td>
+                <td>-</td>
+                <td>25</td>
+                <td>2020-01-01</td>
+                <td>
+                  <a href="#modal-edit-department" class="btn btn-sm btn-secondary">編集</a>
+                  <button class="btn btn-sm btn-danger">削除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>開発部</td>
+                <td>-</td>
+                <td>18</td>
+                <td>2020-01-01</td>
+                <td>
+                  <a href="#modal-edit-department" class="btn btn-sm btn-secondary">編集</a>
+                  <button class="btn btn-sm btn-danger">削除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>人事部</td>
+                <td>-</td>
+                <td>8</td>
+                <td>2020-01-01</td>
+                <td>
+                  <a href="#modal-edit-department" class="btn btn-sm btn-secondary">編集</a>
+                  <button class="btn btn-sm btn-danger">削除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>営業一部</td>
+                <td>営業部</td>
+                <td>12</td>
+                <td>2021-04-01</td>
+                <td>
+                  <a href="#modal-edit-department" class="btn btn-sm btn-secondary">編集</a>
+                  <button class="btn btn-sm btn-danger">削除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>営業二部</td>
+                <td>営業部</td>
+                <td>13</td>
+                <td>2021-04-01</td>
+                <td>
+                  <a href="#modal-edit-department" class="btn btn-sm btn-secondary">編集</a>
+                  <button class="btn btn-sm btn-danger">削除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新規部署追加モーダル -->
+    <div id="modal-new-department" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">部署を追加</h2>
+          <a href="#" class="modal-close">&times;</a>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group">
+              <label for="dept-name" class="form-label required">部署名</label>
+              <input 
+                type="text" 
+                id="dept-name" 
+                name="dept-name" 
+                class="form-input" 
+                placeholder="営業部"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="parent-dept" class="form-label">親部署</label>
+              <select id="parent-dept" name="parent-dept" class="form-select">
+                <option value="">なし（トップレベル）</option>
+                <option value="sales">営業部</option>
+                <option value="dev">開発部</option>
+                <option value="hr">人事部</option>
+              </select>
+              <div class="form-help">階層構造を作成する場合は親部署を選択してください</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-secondary">キャンセル</a>
+          <button type="submit" class="btn btn-primary">追加</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部署編集モーダル -->
+    <div id="modal-edit-department" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">部署を編集</h2>
+          <a href="#" class="modal-close">&times;</a>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group">
+              <label for="dept-name-edit" class="form-label required">部署名</label>
+              <input 
+                type="text" 
+                id="dept-name-edit" 
+                name="dept-name-edit" 
+                class="form-input" 
+                value="営業部"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="parent-dept-edit" class="form-label">親部署</label>
+              <select id="parent-dept-edit" name="parent-dept-edit" class="form-select">
+                <option value="">なし（トップレベル）</option>
+                <option value="sales" selected>営業部</option>
+                <option value="dev">開発部</option>
+                <option value="hr">人事部</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-secondary">キャンセル</a>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+

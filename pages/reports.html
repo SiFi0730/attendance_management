@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レポート - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link active">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">レポート</h1>
+      <p class="page-description">勤怠データの集計・エクスポートを行います</p>
+    </div>
+
+    <!-- タブ -->
+    <div class="tabs">
+      <ul class="tab-list">
+        <li class="tab-item"><a href="#tab-summary" class="tab-link">集計</a></li>
+        <li class="tab-item"><a href="#tab-export" class="tab-link">エクスポート</a></li>
+        <li class="tab-item"><a href="#tab-import" class="tab-link">インポート</a></li>
+        <li class="tab-item"><a href="#tab-jobs" class="tab-link">ジョブ履歴</a></li>
+        <li class="tab-item"><a href="payslip.html" class="tab-link">給与明細</a></li>
+      </ul>
+    </div>
+
+    <!-- 集計タブ -->
+    <div id="tab-summary" class="tab-content card">
+      <div class="card-header">
+        <h2 class="card-title">集計レポート</h2>
+      </div>
+      <div class="card-body">
+        <!-- フィルタバー -->
+        <div class="filter-bar" style="margin-bottom: var(--spacing-lg);">
+          <div class="filter-group">
+            <label class="filter-label">集計期間:</label>
+            <select class="form-select filter-input">
+              <option value="daily" selected>日次</option>
+              <option value="weekly">週次</option>
+              <option value="monthly">月次</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">開始日:</label>
+            <input type="date" class="form-input filter-input" value="2025-01-01">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">終了日:</label>
+            <input type="date" class="form-input filter-input" value="2025-01-31">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">部署:</label>
+            <select class="form-select filter-input">
+              <option value="">すべて</option>
+              <option value="sales">営業部</option>
+              <option value="dev">開発部</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <button class="btn btn-primary">集計実行</button>
+          </div>
+        </div>
+
+        <!-- 集計結果 -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>従業員名</th>
+                <th>部署</th>
+                <th>実働時間</th>
+                <th>所定時間</th>
+                <th>残業時間</th>
+                <th>深夜時間</th>
+                <th>休日労働</th>
+                <th>遅刻回数</th>
+                <th>早退回数</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>山田太郎</td>
+                <td>営業部</td>
+                <td>162.5h</td>
+                <td>160.0h</td>
+                <td>2.5h</td>
+                <td>0.0h</td>
+                <td>0.0h</td>
+                <td>1回</td>
+                <td>0回</td>
+              </tr>
+              <tr>
+                <td>佐藤花子</td>
+                <td>開発部</td>
+                <td>175.0h</td>
+                <td>160.0h</td>
+                <td>15.0h</td>
+                <td>2.0h</td>
+                <td>0.0h</td>
+                <td>0回</td>
+                <td>0回</td>
+              </tr>
+              <tr>
+                <td>鈴木一郎</td>
+                <td>人事部</td>
+                <td>155.0h</td>
+                <td>160.0h</td>
+                <td>0.0h</td>
+                <td>0.0h</td>
+                <td>0.0h</td>
+                <td>0回</td>
+                <td>2回</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- エクスポートタブ -->
+    <div id="tab-export" class="tab-content card">
+      <div class="card-header">
+        <h2 class="card-title">CSVエクスポート</h2>
+      </div>
+      <div class="card-body">
+        <form>
+          <div class="form-group">
+            <label for="export-type" class="form-label required">エクスポート種類</label>
+            <select id="export-type" name="export-type" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="employees">従業員一覧</option>
+              <option value="attendance">勤怠明細（仕様書11.3）</option>
+              <option value="summary">集計結果</option>
+              <option value="punches">打刻原票</option>
+            </select>
+            <div class="form-help" id="export-help" style="display: none;">
+              <strong>勤怠明細エクスポート仕様（仕様書11.3）:</strong><br>
+              ヘッダ例: <code>employee_code</code>, <code>date</code>, <code>clock_in</code>, <code>clock_out</code>, <code>break_minutes</code>, <code>work_minutes</code>, <code>overtime_minutes</code>, <code>late</code>, <code>early_leave</code><br>
+              文字コード: UTF-8、日付形式: ISO8601、カンマ区切り、ヘッダ1行目必須
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="export-period-start" class="form-label">開始日</label>
+            <input 
+              type="date" 
+              id="export-period-start" 
+              name="export-period-start" 
+              class="form-input"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="export-period-end" class="form-label">終了日</label>
+            <input 
+              type="date" 
+              id="export-period-end" 
+              name="export-period-end" 
+              class="form-input"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="export-department" class="form-label">部署</label>
+            <select id="export-department" name="export-department" class="form-select">
+              <option value="">すべて</option>
+              <option value="sales">営業部</option>
+              <option value="dev">開発部</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+              <input type="checkbox" name="include-personal-info" style="cursor: pointer;">
+              <span>個人情報を含める</span>
+            </label>
+            <div class="form-help" style="font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs);">
+              個人情報保護のため、必要最小限の情報のみ含めることを推奨します（仕様書14）
+            </div>
+          </div>
+
+          <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+            <button type="submit" class="btn btn-primary">エクスポート開始</button>
+            <button type="button" class="btn btn-secondary">キャンセル</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- インポートタブ -->
+    <div id="tab-import" class="tab-content card">
+      <div class="card-header">
+        <h2 class="card-title">CSVインポート</h2>
+      </div>
+      <div class="card-body">
+        <form>
+          <div class="form-group">
+            <label for="import-type" class="form-label required">インポート種類</label>
+            <select id="import-type" name="import-type" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="employees">従業員インポート（仕様書11.1）</option>
+              <option value="punches">打刻インポート（仕様書11.2）</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="import-file" class="form-label required">CSVファイル</label>
+            <input 
+              type="file" 
+              id="import-file" 
+              name="import-file" 
+              class="form-input"
+              accept=".csv"
+              required
+            >
+            <div class="form-help" id="import-help">
+              CSVファイルを選択してください。文字コード: UTF-8、日付形式: ISO8601
+            </div>
+          </div>
+
+          <div class="form-group" id="import-spec-employees" style="display: none;">
+            <div class="alert alert-info">
+              <strong>従業員インポート仕様（仕様書11.1）:</strong><br>
+              必須ヘッダ: <code>employee_code</code>, <code>name</code>, <code>email</code>, <code>dept_code</code>, <code>employment_type</code>, <code>hire_date</code><br>
+              任意ヘッダ: <code>leave_date</code>, <code>work_location_tz</code><br>
+              バリデーション: 重複employee_code不可、日付形式ISO8601、メール形式
+            </div>
+          </div>
+
+          <div class="form-group" id="import-spec-punches" style="display: none;">
+            <div class="alert alert-info">
+              <strong>打刻インポート仕様（仕様書11.2）:</strong><br>
+              必須ヘッダ: <code>employee_code</code>, <code>type</code>, <code>occurred_at</code>, <code>source</code><br>
+              typeは <code>in</code> | <code>out</code> | <code>break_in</code> | <code>break_out</code><br>
+              冪等: <code>(employee_code,type,occurred_at)</code> 同一はスキップ/上書き選択可能
+            </div>
+            <div class="form-group" style="margin-top: var(--spacing-md);">
+              <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+                <input type="checkbox" name="skip-duplicate-punches" style="cursor: pointer;">
+                <span>重複打刻をスキップ（推奨: オフ）</span>
+              </label>
+              <div class="form-help" style="font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs);">
+                同一の(employee_code,type,occurred_at)がある場合、エラーとして報告されます（仕様書11.2）
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+            <button type="submit" class="btn btn-primary">インポート開始</button>
+            <button type="button" class="btn btn-secondary">キャンセル</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ジョブ履歴タブ -->
+    <div id="tab-jobs" class="tab-content card">
+      <div class="card-header">
+        <h2 class="card-title">ジョブ履歴</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ジョブID</th>
+                <th>種類</th>
+                <th>ステータス</th>
+                <th>開始日時</th>
+                <th>完了日時</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>JOB001</td>
+                <td>CSVエクスポート（勤怠明細）</td>
+                <td><span class="badge badge-success">完了</span></td>
+                <td>2025-01-15 10:00</td>
+                <td>2025-01-15 10:05</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary">ダウンロード</button>
+                </td>
+              </tr>
+              <tr>
+                <td>JOB002</td>
+                <td>CSVインポート（従業員）</td>
+                <td><span class="badge badge-success">完了</span></td>
+                <td>2025-01-14 14:00</td>
+                <td>2025-01-14 14:02</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary">結果確認</button>
+                </td>
+              </tr>
+              <tr>
+                <td>JOB003</td>
+                <td>CSVエクスポート（集計結果）</td>
+                <td><span class="badge badge-warning">処理中</span></td>
+                <td>2025-01-15 11:00</td>
+                <td>-</td>
+                <td>
+                  <span class="loading"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // エクスポート種類に応じてヘルプを表示
+    document.addEventListener('DOMContentLoaded', function() {
+      const exportTypeSelect = document.getElementById('export-type');
+      const exportHelp = document.getElementById('export-help');
+
+      if (exportTypeSelect && exportHelp) {
+        exportTypeSelect.addEventListener('change', function() {
+          if (this.value === 'attendance') {
+            exportHelp.style.display = 'block';
+          } else {
+            exportHelp.style.display = 'none';
+          }
+        });
+      }
+
+      // インポート種類に応じて仕様を表示
+      const importTypeSelect = document.getElementById('import-type');
+      const importSpecEmployees = document.getElementById('import-spec-employees');
+      const importSpecPunches = document.getElementById('import-spec-punches');
+      const importHelp = document.getElementById('import-help');
+
+      if (importTypeSelect) {
+        importTypeSelect.addEventListener('change', function() {
+          if (this.value === 'employees') {
+            if (importSpecEmployees) importSpecEmployees.style.display = 'block';
+            if (importSpecPunches) importSpecPunches.style.display = 'none';
+            if (importHelp) importHelp.textContent = '従業員インポート: UTF-8エンコードのCSVファイルを選択してください';
+          } else if (this.value === 'punches') {
+            if (importSpecEmployees) importSpecEmployees.style.display = 'none';
+            if (importSpecPunches) importSpecPunches.style.display = 'block';
+            if (importHelp) importHelp.textContent = '打刻インポート: UTF-8エンコードのCSVファイルを選択してください。typeは in|out|break_in|break_out のいずれか';
+          } else {
+            if (importSpecEmployees) importSpecEmployees.style.display = 'none';
+            if (importSpecPunches) importSpecPunches.style.display = 'none';
+            if (importHelp) importHelp.textContent = 'CSVファイルを選択してください。文字コード: UTF-8、日付形式: ISO8601';
+          }
+        });
+      }
+    });
+  </script>
+  <script src="../scripts/common.js"></script>
+</body>
+</html>
+

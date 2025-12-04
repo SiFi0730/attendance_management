@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>従業員招待 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="breadcrumb">
+      <span class="breadcrumb-item"><a href="employees.html">従業員管理</a></span>
+      <span class="breadcrumb-item active">従業員招待</span>
+    </div>
+
+    <div class="page-header">
+      <h1 class="page-title">従業員招待</h1>
+      <p class="page-description">新しい従業員を招待してアカウントを紐付けます</p>
+    </div>
+
+    <div class="card" style="max-width: 600px;">
+      <div class="card-header">
+        <h2 class="card-title">招待情報</h2>
+      </div>
+      <div class="card-body">
+        <form>
+          <div class="form-group">
+            <label for="employee-code" class="form-label required">社員番号</label>
+            <input 
+              type="text" 
+              id="employee-code" 
+              name="employee-code" 
+              class="form-input" 
+              placeholder="EMP001"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="name" class="form-label required">氏名</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-input" 
+              placeholder="山田太郎"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="form-label required">メールアドレス</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-input" 
+              placeholder="example@company.com"
+              required
+            >
+            <div class="form-help">招待メールが送信されます</div>
+          </div>
+
+          <div class="form-group">
+            <label for="department" class="form-label required">部署</label>
+            <select id="department" name="department" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="sales">営業部</option>
+              <option value="dev">開発部</option>
+              <option value="hr">人事部</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="employment-type" class="form-label required">雇用形態</label>
+            <select id="employment-type" name="employment-type" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="full">正社員</option>
+              <option value="part">パート</option>
+              <option value="contract">契約社員</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="hire-date" class="form-label required">雇用日</label>
+            <input 
+              type="date" 
+              id="hire-date" 
+              name="hire-date" 
+              class="form-input" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="role" class="form-label required">役割</label>
+            <select id="role" name="role" class="form-select" required>
+              <option value="employee">Employee（従業員）</option>
+              <option value="manager">Manager（マネージャー）</option>
+              <option value="admin">CompanyAdmin（企業管理者）</option>
+            </select>
+            <div class="form-help">役割により権限が異なります</div>
+          </div>
+
+          <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+            <a href="employees.html" class="btn btn-secondary" style="flex: 1;">キャンセル</a>
+            <button type="submit" class="btn btn-primary" style="flex: 1;">招待を送信</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+

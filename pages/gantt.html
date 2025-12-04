@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ガントチャート - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <style>
+    .gantt-container {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-lg);
+      padding: var(--spacing-lg);
+      overflow-x: auto;
+    }
+
+    .gantt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .gantt-legend {
+      display: flex;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+
+    .gantt-legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-size-sm);
+    }
+
+    .gantt-legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: var(--border-radius-sm);
+    }
+
+    .gantt-time-axis {
+      display: grid;
+      grid-template-columns: 180px repeat(24, minmax(40px, 1fr));
+      gap: 2px;
+      margin-bottom: var(--spacing-md);
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-xs);
+    }
+
+    .gantt-time-label {
+      padding: var(--spacing-sm);
+      font-weight: 600;
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      text-align: center;
+      background-color: var(--bg-primary);
+      border-radius: var(--border-radius-sm);
+    }
+
+    .gantt-time-hour {
+      text-align: center;
+      padding: var(--spacing-xs);
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+      color: var(--text-primary);
+      background-color: var(--bg-primary);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .gantt-time-hour:nth-child(odd) {
+      background-color: var(--bg-secondary);
+    }
+
+    .gantt-row {
+      display: grid;
+      grid-template-columns: 180px repeat(24, minmax(40px, 1fr));
+      gap: 2px;
+      margin-bottom: var(--spacing-md);
+      min-height: 60px;
+    }
+
+    .gantt-row-label {
+      padding: var(--spacing-md);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      font-size: var(--font-size-sm);
+    }
+
+    .gantt-cell {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      position: relative;
+      min-height: 60px;
+    }
+
+    .gantt-cell:nth-child(odd) {
+      background-color: var(--bg-secondary);
+    }
+
+    .gantt-bar {
+      position: absolute;
+      height: 70%;
+      top: 15%;
+      border-radius: var(--border-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+      color: var(--text-inverse);
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .gantt-bar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      z-index: 2;
+    }
+
+    /* ズーム・パン機能のスタイル */
+    .gantt-container.zoomed {
+      transform-origin: top left;
+    }
+
+    .gantt-container.panning {
+      cursor: grab;
+    }
+
+    .gantt-container.panning:active {
+      cursor: grabbing;
+    }
+
+    /* アクセシビリティ: キーボード操作対応 */
+    .gantt-container:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .gantt-bar-work {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      border-left: 3px solid var(--color-primary-dark);
+      border-right: 3px solid var(--color-primary-dark);
+    }
+
+    .gantt-bar-break {
+      background: linear-gradient(135deg, var(--color-info) 0%, #0891b2 100%);
+      opacity: 0.85;
+      border-left: 2px solid #0891b2;
+      border-right: 2px solid #0891b2;
+    }
+
+    .gantt-bar-pending {
+      background: repeating-linear-gradient(
+        45deg,
+        var(--color-warning),
+        var(--color-warning) 8px,
+        rgba(245, 158, 11, 0.4) 8px,
+        rgba(245, 158, 11, 0.4) 16px
+      );
+      border: 2px dashed var(--color-warning);
+    }
+
+    .gantt-bar-error {
+      background: linear-gradient(135deg, var(--color-error) 0%, #dc2626 100%);
+      border-left: 3px solid #dc2626;
+      border-right: 3px solid #dc2626;
+    }
+
+    .gantt-bar-empty {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 2px dashed var(--color-error);
+      color: var(--color-error);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+    }
+
+    /* 時間帯の背景色（営業時間を強調） */
+    .gantt-cell[data-hour="9"],
+    .gantt-cell[data-hour="10"],
+    .gantt-cell[data-hour="11"],
+    .gantt-cell[data-hour="13"],
+    .gantt-cell[data-hour="14"],
+    .gantt-cell[data-hour="15"],
+    .gantt-cell[data-hour="16"],
+    .gantt-cell[data-hour="17"] {
+      background-color: rgba(37, 99, 235, 0.05);
+    }
+
+    .gantt-cell[data-hour="12"] {
+      background-color: rgba(6, 182, 212, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link active">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">ガントチャート</h1>
+      <p class="page-description">勤怠状況を時系列で可視化します</p>
+    </div>
+
+    <!-- フィルタバー -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label">表示期間（スケール）:</label>
+        <select class="form-select filter-input" id="gantt-scale">
+          <option value="day" selected>日</option>
+          <option value="week">週</option>
+          <option value="month">月</option>
+        </select>
+        <div class="form-help" style="font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs);">
+          仕様書5.5、12: 日/週/月スケール対応
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">ズーム:</label>
+        <div style="display: flex; gap: var(--spacing-xs);">
+          <button class="btn btn-sm btn-secondary" id="zoom-in" title="ズームイン">+</button>
+          <button class="btn btn-sm btn-secondary" id="zoom-out" title="ズームアウト">-</button>
+          <button class="btn btn-sm btn-secondary" id="zoom-reset" title="リセット">↺</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">パン:</label>
+        <div style="display: flex; gap: var(--spacing-xs);">
+          <button class="btn btn-sm btn-secondary" id="pan-left" title="左へ移動">←</button>
+          <button class="btn btn-sm btn-secondary" id="pan-right" title="右へ移動">→</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">日付:</label>
+        <input type="date" class="form-input filter-input" id="filter-date" value="">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">部署:</label>
+        <select class="form-select filter-input" id="filter-department">
+          <option value="">すべて</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">従業員:</label>
+        <select class="form-select filter-input" id="filter-employee">
+          <option value="">すべて</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <button class="btn btn-secondary" id="apply-filter">フィルタ適用</button>
+      </div>
+      <div class="filter-group">
+        <button class="btn btn-sm btn-secondary" id="download-logs" title="コンソールログをダウンロード">📥 ログダウンロード</button>
+      </div>
+    </div>
+
+    <!-- ガントチャート -->
+    <div class="gantt-container" id="gantt-container">
+      <div class="gantt-header">
+        <h3 style="margin: 0; font-size: var(--font-size-xl);" id="gantt-title">2025年1月15日（水）</h3>
+        <div class="gantt-legend">
+          <div class="gantt-legend-item">
+            <div class="gantt-legend-color" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);"></div>
+            <span>勤務時間</span>
+          </div>
+          <div class="gantt-legend-item">
+            <div class="gantt-legend-color" style="background: linear-gradient(135deg, var(--color-info) 0%, #0891b2 100%);"></div>
+            <span>休憩時間</span>
+          </div>
+          <div class="gantt-legend-item">
+            <div class="gantt-legend-color" style="background: repeating-linear-gradient(45deg, var(--color-warning), var(--color-warning) 8px, rgba(245, 158, 11, 0.4) 8px, rgba(245, 158, 11, 0.4) 16px); border: 2px dashed var(--color-warning);"></div>
+            <span>申請中</span>
+          </div>
+          <div class="gantt-legend-item">
+            <div class="gantt-legend-color" style="background: linear-gradient(135deg, var(--color-error) 0%, #dc2626 100%);"></div>
+            <span>異常・未打刻</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 時間軸（日スケール時のみ表示） -->
+      <div class="gantt-time-axis" id="gantt-time-axis" style="display: none;">
+        <!-- 動的に生成されます -->
+      </div>
+
+      <!-- ガント行（動的に生成） -->
+      <div id="gantt-rows"></div>
+    </div>
+
+    <!-- ガントチャート操作の説明 -->
+    <div class="card" style="margin-top: var(--spacing-xl);">
+      <div class="card-header">
+        <h2 class="card-title">操作ガイド（仕様書5.5、12）</h2>
+      </div>
+      <div class="card-body">
+        <ul style="list-style: disc; padding-left: var(--spacing-lg);">
+          <li><strong>スケール:</strong> 日/週/月の切り替えが可能です</li>
+          <li><strong>ズーム:</strong> +/-ボタンで時間軸の拡大・縮小ができます</li>
+          <li><strong>パン:</strong> ←→ボタンで時間軸を左右に移動できます</li>
+          <li><strong>ホバー:</strong> バーにマウスを乗せると詳細情報が表示されます</li>
+          <li><strong>クリック:</strong> バーをクリックすると詳細/編集画面が開きます（権限要）</li>
+          <li><strong>キーボード:</strong> 矢印キーで時間軸を移動できます（アクセシビリティ対応）</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // ガントチャート - API連携
+    // ============================================
+
+    let employees = [];
+    let departments = [];
+    let punches = [];
+
+    // 現在の日付を取得（仮想時間モード対応）
+    function getCurrentDate() {
+      return getCurrentTime();
+    }
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      // 日付フィルタを今日の日付に設定（仮想時間対応）
+      updateDateFilter();
+      
+      // データを読み込み
+      await Promise.all([
+        loadDepartments(),
+        loadEmployees()
+      ]);
+      
+      // ガントチャートデータを読み込み
+      await loadGanttData();
+      
+      // フィルタイベントリスナーを設定
+      setupFilterListeners();
+      
+      // ズーム・パン機能を設定
+      setupZoomPanControls();
+      
+      // 仮想時間モード変更のリスナーを設定
+      setupTimeModeChangeListener();
+      
+      // ログダウンロードボタンの設定
+      setupLogDownloadButton();
+    });
+    
+    // ログダウンロードボタンの設定
+    function setupLogDownloadButton() {
+      const downloadBtn = document.getElementById('download-logs');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+          // メニューを表示
+          const format = prompt('ログの形式を選択してください:\n1. JSON (推奨)\n2. TXT\n3. CSV\n\n番号を入力してください (1-3):', '1');
+          
+          if (format === '1' || format === 'json' || format === '') {
+            downloadLogs('json');
+          } else if (format === '2' || format === 'txt') {
+            downloadLogs('txt');
+          } else if (format === '3' || format === 'csv') {
+            downloadLogs('csv');
+          } else {
+            alert('無効な形式です。JSON形式でダウンロードします。');
+            downloadLogs('json');
+          }
+        });
+      }
+    }
+
+    // 日付フィルタを更新（仮想時間対応）
+    function updateDateFilter() {
+      const dateInput = document.getElementById('filter-date');
+      const currentDate = getCurrentDate();
+      const todayStr = formatDate(currentDate);
+      
+      // 現在の値が空の場合のみ設定（ユーザーが変更した場合は保持）
+      if (!dateInput.value) {
+        dateInput.value = todayStr;
+      }
+      
+      console.log('日付フィルタ更新:', { todayStr, currentValue: dateInput.value, timeMode: getTimeMode() });
+    }
+
+    // 仮想時間モード変更のリスナーを設定
+    function setupTimeModeChangeListener() {
+      // localStorageの変更を監視（別タブでの変更も検知）
+      window.addEventListener('storage', function(e) {
+        if (e.key === TIME_MODE_STORAGE_KEY || e.key === VIRTUAL_TIME_STORAGE_KEY) {
+          // 時間モードが変更されたら日付フィルタとデータを更新
+          updateDateFilter();
+          loadGanttData();
+        }
+      });
+      
+      // カスタムイベントで時間モード変更を検知
+      window.addEventListener('timeModeChanged', function() {
+        updateDateFilter();
+        loadGanttData();
+      });
+    }
+
+    // 部署一覧を読み込み
+    async function loadDepartments() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          departments = data.data;
+          const select = document.getElementById('filter-department');
+          select.innerHTML = '<option value="">すべて</option>';
+          
+          departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept.id;
+            option.textContent = dept.name;
+            select.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('部署一覧の読み込みエラー:', error);
+      }
+    }
+
+    // 従業員一覧を読み込み
+    async function loadEmployees() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/employees?limit=1000`);
+        const data = await response.json();
+        
+        console.log('従業員一覧取得結果:', { success: data.success, count: data.data?.items?.length || 0 });
+        
+        if (response.ok && data.success) {
+          employees = data.data.items || [];
+          const select = document.getElementById('filter-employee');
+          select.innerHTML = '<option value="">すべて</option>';
+          
+          employees.forEach(emp => {
+            const option = document.createElement('option');
+            option.value = emp.id;
+            option.textContent = `${emp.name}${emp.department_name ? `（${emp.department_name}）` : ''}`;
+            select.appendChild(option);
+          });
+          
+          console.log('従業員一覧:', employees);
+        } else {
+          console.error('従業員一覧取得エラー:', data);
+        }
+      } catch (error) {
+        console.error('従業員一覧の読み込みエラー:', error);
+      }
+    }
+
+    // ガントチャートデータを読み込み
+    async function loadGanttData() {
+      const dateInput = document.getElementById('filter-date');
+      const scaleSelect = document.getElementById('gantt-scale');
+      const currentDate = getCurrentDate();
+      const selectedDate = dateInput.value || formatDate(currentDate);
+      const scale = scaleSelect.value || 'day';
+      
+      const date = new Date(selectedDate + 'T00:00:00');
+      let endDate;
+      
+      // スケールに応じて終了日を設定
+      if (scale === 'day') {
+        endDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      } else if (scale === 'week') {
+        // 週: 選択した日から7日後
+        endDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+      } else if (scale === 'month') {
+        // 月: 選択した日の月の最終日
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        endDate = new Date(year, month + 1, 0); // 次の月の0日 = 今月の最終日
+        endDate.setHours(23, 59, 59, 999);
+        // 開始日を月の1日に設定
+        date.setDate(1);
+        date.setHours(0, 0, 0, 0);
+      } else {
+        endDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      }
+      
+      const fromStr = formatDate(date) + ' 00:00:00';
+      const toStr = formatDate(endDate) + ' 23:59:59';
+      
+      console.log('打刻データ取得:', { 
+        selectedDate,
+        scale,
+        fromStr, 
+        toStr,
+        timeMode: getTimeMode(),
+        virtualTime: getVirtualTime()?.toISOString()
+      });
+      
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/punches?from=${fromStr}&to=${toStr}&limit=10000`);
+        const data = await response.json();
+        
+        console.log('打刻データ取得結果:', { success: data.success, count: data.data?.items?.length || 0 });
+        
+        if (response.ok && data.success) {
+          punches = data.data.items || [];
+          console.log('打刻データ:', punches);
+          renderGanttChart();
+          updateTitle(selectedDate, scale);
+        } else {
+          console.error('打刻データ取得エラー:', data);
+        }
+      } catch (error) {
+        console.error('打刻データの読み込みエラー:', error);
+      }
+    }
+
+    // ガントチャートを描画
+    function renderGanttChart() {
+      const deptFilter = document.getElementById('filter-department').value;
+      const empFilter = document.getElementById('filter-employee').value;
+      const dateFilter = document.getElementById('filter-date').value;
+      const scaleSelect = document.getElementById('gantt-scale');
+      const scale = scaleSelect.value || 'day';
+      
+      console.log('ガントチャート描画開始:', { 
+        employeesCount: employees.length, 
+        punchesCount: punches.length,
+        deptFilter,
+        empFilter,
+        dateFilter,
+        scale,
+        allPunchEmployeeIds: punches.map(p => p.employee_id),
+        allEmployeeIds: employees.map(e => e.id)
+      });
+      
+      // フィルタリング
+      let filteredEmployees = employees;
+      if (deptFilter) {
+        filteredEmployees = filteredEmployees.filter(emp => emp.dept_id === deptFilter);
+        console.log('部署フィルタ適用後:', filteredEmployees.length, '人');
+      }
+      if (empFilter) {
+        filteredEmployees = filteredEmployees.filter(emp => emp.id === empFilter);
+        console.log('従業員フィルタ適用後:', filteredEmployees.length, '人');
+      }
+      
+      console.log('フィルタ後の従業員:', filteredEmployees.map(e => ({ id: e.id, name: e.name })));
+      
+      const rowsContainer = document.getElementById('gantt-rows');
+      if (!rowsContainer) {
+        console.error('gantt-rows要素が見つかりません');
+        return;
+      }
+      
+      rowsContainer.innerHTML = '';
+      
+      if (filteredEmployees.length === 0) {
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'gantt-row';
+        emptyRow.innerHTML = '<div class="gantt-row-label" style="grid-column: 1 / -1; text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">表示する従業員がありません</div>';
+        rowsContainer.appendChild(emptyRow);
+        return;
+      }
+      
+      // スケールに応じて表示形式を切り替え
+      if (scale === 'day') {
+        // 日スケール: ガントチャート形式
+        renderTimeAxis(scale);
+        filteredEmployees.forEach(employee => {
+          const row = createGanttRow(employee, scale);
+          rowsContainer.appendChild(row);
+        });
+      } else {
+        // 週・月スケール: カレンダー形式
+        renderCalendarView(filteredEmployees, scale);
+      }
+      
+      console.log('ガントチャート描画完了');
+    }
+
+    // カレンダー形式で表示
+    function renderCalendarView(filteredEmployees, scale) {
+      const dateInput = document.getElementById('filter-date');
+      const currentDate = getCurrentDate();
+      const selectedDate = dateInput.value || formatDate(currentDate);
+      const startDate = new Date(selectedDate + 'T00:00:00');
+      
+      // 表示する日付範囲を取得
+      let dateRange = [];
+      if (scale === 'week') {
+        const startOfWeek = new Date(startDate);
+        const dayOfWeek = startDate.getDay();
+        startOfWeek.setDate(startDate.getDate() - dayOfWeek);
+        
+        for (let day = 0; day < 7; day++) {
+          const currentDay = new Date(startOfWeek);
+          currentDay.setDate(startOfWeek.getDate() + day);
+          dateRange.push(new Date(currentDay));
+        }
+      } else if (scale === 'month') {
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const currentDay = new Date(year, month, day);
+          dateRange.push(currentDay);
+        }
+      }
+      
+      // カレンダー形式のテーブルを作成
+      const calendarContainer = document.createElement('div');
+      calendarContainer.className = 'card';
+      calendarContainer.style.marginTop = 'var(--spacing-xl)';
+      
+      const table = document.createElement('table');
+      table.className = 'table';
+      
+      // ヘッダー行
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headerRow.innerHTML = '<th>従業員</th>';
+      
+      dateRange.forEach(date => {
+        const th = document.createElement('th');
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const weekday = weekdays[date.getDay()];
+        th.textContent = `${date.getMonth() + 1}/${date.getDate()}(${weekday})`;
+        headerRow.appendChild(th);
+      });
+      
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // データ行
+      const tbody = document.createElement('tbody');
+      
+      filteredEmployees.forEach(employee => {
+        const row = document.createElement('tr');
+        
+        // 従業員名セル
+        const nameCell = document.createElement('td');
+        nameCell.textContent = `${employee.name}${employee.department_name ? `（${employee.department_name}）` : ''}`;
+        row.appendChild(nameCell);
+        
+        // 各日のデータセル
+        dateRange.forEach(date => {
+          const dateStr = formatDate(date);
+          const dayPunches = punches.filter(p => {
+            if (p.employee_id !== employee.id) return false;
+            const punchDate = new Date(p.occurred_at);
+            return formatDate(punchDate) === dateStr;
+          });
+          
+          dayPunches.sort((a, b) => new Date(a.occurred_at) - new Date(b.occurred_at));
+          
+          const workSession = calculateWorkSessionForDay(dayPunches);
+          
+          const cell = document.createElement('td');
+          cell.style.textAlign = 'center';
+          cell.style.padding = 'var(--spacing-md)';
+          
+          if (workSession) {
+            const clockIn = workSession.start ? formatTime(workSession.start) : '-';
+            const clockOut = workSession.end ? formatTime(workSession.end) : '-';
+            const breakMinutes = workSession.totalBreakMinutes || 0;
+            const breakHours = Math.floor(breakMinutes / 60);
+            const breakMins = breakMinutes % 60;
+            const breakTime = breakMinutes > 0 ? `${breakHours}:${String(breakMins).padStart(2, '0')}` : '-';
+            
+            cell.innerHTML = `
+              <div style="font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                <div><strong>出勤:</strong> ${clockIn}</div>
+                <div><strong>退勤:</strong> ${clockOut}</div>
+                <div><strong>休憩:</strong> ${breakTime}</div>
+              </div>
+            `;
+            
+            // 未打刻の場合は警告色
+            if (!workSession.start || !workSession.end) {
+              cell.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            }
+          } else {
+            cell.textContent = '未打刻';
+            cell.style.color = 'var(--color-error)';
+            cell.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+          }
+          
+          row.appendChild(cell);
+        });
+        
+        tbody.appendChild(row);
+      });
+      
+      table.appendChild(tbody);
+      calendarContainer.appendChild(table);
+      
+      const rowsContainer = document.getElementById('gantt-rows');
+      rowsContainer.appendChild(calendarContainer);
+    }
+
+    // 1日の勤務セッションを計算
+    function calculateWorkSessionForDay(punches) {
+      if (punches.length === 0) return null;
+      
+      let clockIn = null;
+      let clockOut = null;
+      const breaks = [];
+      let currentBreak = null;
+      
+      punches.forEach(punch => {
+        const punchTime = new Date(punch.occurred_at);
+        
+        if (punch.type === 'in') {
+          clockIn = punchTime;
+        } else if (punch.type === 'out') {
+          clockOut = punchTime;
+        } else if (punch.type === 'break_in') {
+          currentBreak = { start: punchTime, end: null };
+        } else if (punch.type === 'break_out' && currentBreak) {
+          currentBreak.end = punchTime;
+          breaks.push(currentBreak);
+          currentBreak = null;
+        }
+      });
+      
+      // 休憩時間の合計を計算
+      let totalBreakMinutes = 0;
+      breaks.forEach(breakTime => {
+        if (breakTime.start && breakTime.end) {
+          const breakDuration = (breakTime.end.getTime() - breakTime.start.getTime()) / (60 * 1000);
+          totalBreakMinutes += breakDuration;
+        }
+      });
+      
+      return {
+        start: clockIn,
+        end: clockOut,
+        breaks: breaks,
+        totalBreakMinutes: Math.round(totalBreakMinutes)
+      };
+    }
+
+    // 時間軸を生成（日スケール時のみ）
+    function renderTimeAxis(scale) {
+      const timeAxisContainer = document.getElementById('gantt-time-axis');
+      if (!timeAxisContainer) return;
+      
+      if (scale !== 'day') {
+        timeAxisContainer.style.display = 'none';
+        return;
+      }
+      
+      timeAxisContainer.style.display = 'grid';
+      
+      const dateInput = document.getElementById('filter-date');
+      const currentDate = getCurrentDate();
+      const selectedDate = dateInput.value || formatDate(currentDate);
+      const startDate = new Date(selectedDate + 'T00:00:00');
+      
+      // 日スケール: 24時間
+      const timeSlots = Array.from({ length: 24 }, (_, i) => ({
+        label: `${i}時`,
+        hour: i,
+        date: startDate
+      }));
+      
+      // 時間軸をクリア
+      timeAxisContainer.innerHTML = '';
+      
+      // ラベルを追加
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'gantt-time-label';
+      labelDiv.textContent = '従業員';
+      timeAxisContainer.appendChild(labelDiv);
+      
+      // 時間スロットを追加
+      timeSlots.forEach(slot => {
+        const hourDiv = document.createElement('div');
+        hourDiv.className = 'gantt-time-hour';
+        hourDiv.setAttribute('data-hour', slot.hour);
+        hourDiv.textContent = slot.label;
+        timeAxisContainer.appendChild(hourDiv);
+      });
+      
+      // CSSグリッドの列数を更新
+      timeAxisContainer.style.gridTemplateColumns = `180px repeat(24, minmax(40px, 1fr))`;
+    }
+
+    // ガント行を作成
+    function createGanttRow(employee, scale = 'day') {
+      const row = document.createElement('div');
+      row.className = 'gantt-row';
+      
+      // ラベル
+      const label = document.createElement('div');
+      label.className = 'gantt-row-label';
+      label.textContent = `${employee.name}${employee.department_name ? `（${employee.department_name}）` : ''}`;
+      row.appendChild(label);
+      
+      // スケールに応じた打刻データを取得
+      const dateInput = document.getElementById('filter-date');
+      const currentDate = getCurrentDate();
+      const selectedDate = dateInput.value || formatDate(currentDate);
+      const startDate = new Date(selectedDate + 'T00:00:00');
+      
+      let dateRange = [];
+      if (scale === 'day') {
+        dateRange = [selectedDate];
+      } else if (scale === 'week') {
+        // 週の7日分
+        const startOfWeek = new Date(startDate);
+        const dayOfWeek = startDate.getDay();
+        startOfWeek.setDate(startDate.getDate() - dayOfWeek);
+        
+        for (let day = 0; day < 7; day++) {
+          const currentDay = new Date(startOfWeek);
+          currentDay.setDate(startOfWeek.getDate() + day);
+          dateRange.push(formatDate(currentDay));
+        }
+      } else if (scale === 'month') {
+        // 月の全日期間
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const currentDay = new Date(year, month, day);
+          dateRange.push(formatDate(currentDay));
+        }
+      }
+      
+      // 打刻データの日付を正しく比較（タイムゾーンを考慮）
+      const employeePunches = punches.filter(p => {
+        // employee_idの比較（UUIDの文字列比較）
+        if (p.employee_id !== employee.id) {
+          return false;
+        }
+        
+        // occurred_atの形式: "2025-12-02 20:13:37+09" または "2025-12-02T20:13:37+09:00"
+        const punchDate = new Date(p.occurred_at);
+        const punchDateStr = formatDate(punchDate);
+        
+        return dateRange.includes(punchDateStr);
+      });
+      
+      console.log(`従業員 ${employee.name} (ID: ${employee.id}) の打刻データ:`, {
+        employeeId: employee.id,
+        punchesCount: employeePunches.length,
+        dateRange: dateRange,
+        punches: employeePunches.map(p => ({
+          type: p.type,
+          occurred_at: p.occurred_at,
+          employee_id: p.employee_id
+        }))
+      });
+      
+      // 打刻データを時系列でソート
+      employeePunches.sort((a, b) => new Date(a.occurred_at) - new Date(b.occurred_at));
+      
+      // 勤務時間と休憩時間を計算
+      const workSessions = calculateWorkSessions(employeePunches);
+      
+      // 時間スロットを生成
+      let timeSlots = [];
+      if (scale === 'day') {
+        timeSlots = Array.from({ length: 24 }, (_, i) => ({ hour: i, date: startDate }));
+      } else if (scale === 'week') {
+        const startOfWeek = new Date(startDate);
+        const dayOfWeek = startDate.getDay();
+        startOfWeek.setDate(startDate.getDate() - dayOfWeek);
+        
+        for (let day = 0; day < 7; day++) {
+          const currentDay = new Date(startOfWeek);
+          currentDay.setDate(startOfWeek.getDate() + day);
+          
+          for (let hour = 0; hour < 24; hour++) {
+            timeSlots.push({ hour: hour, day: day, date: new Date(currentDay) });
+          }
+        }
+      } else if (scale === 'month') {
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const currentDay = new Date(year, month, day);
+          
+          for (let hour = 0; hour < 24; hour++) {
+            timeSlots.push({ hour: hour, day: day, date: new Date(currentDay) });
+          }
+        }
+      }
+      
+      // セルを作成
+      timeSlots.forEach(slot => {
+        const cell = document.createElement('div');
+        cell.className = 'gantt-cell';
+        cell.setAttribute('data-hour', slot.hour);
+        if (slot.day !== undefined) {
+          cell.setAttribute('data-day', slot.day);
+        }
+        
+        // その時間帯のバーを追加
+        const bars = createBarsForHour(slot.hour, slot.date, workSessions, employeePunches);
+        bars.forEach(bar => cell.appendChild(bar));
+        
+        row.appendChild(cell);
+      });
+      
+      // CSSグリッドの列数を更新
+      const columnCount = timeSlots.length + 1; // +1はラベル列
+      row.style.gridTemplateColumns = `180px repeat(${timeSlots.length}, minmax(20px, 1fr))`;
+      
+      return row;
+    }
+
+    // 勤務セッションを計算
+    function calculateWorkSessions(punches) {
+      const sessions = [];
+      let currentSession = null;
+      
+      punches.forEach(punch => {
+        const punchTime = new Date(punch.occurred_at);
+        
+        if (punch.type === 'in') {
+          currentSession = {
+            start: punchTime,
+            end: null,
+            breaks: []
+          };
+        } else if (punch.type === 'out' && currentSession) {
+          currentSession.end = punchTime;
+          sessions.push(currentSession);
+          currentSession = null;
+        } else if (punch.type === 'break_in' && currentSession) {
+          currentSession.breaks.push({ start: punchTime, end: null });
+        } else if (punch.type === 'break_out' && currentSession && currentSession.breaks.length > 0) {
+          const lastBreak = currentSession.breaks[currentSession.breaks.length - 1];
+          if (!lastBreak.end) {
+            lastBreak.end = punchTime;
+          }
+        }
+      });
+      
+      // 退勤がない場合もセッションとして追加
+      if (currentSession) {
+        sessions.push(currentSession);
+      }
+      
+      console.log('勤務セッション計算結果:', sessions.map(s => ({
+        start: s.start?.toISOString(),
+        end: s.end?.toISOString(),
+        breaks: s.breaks.map(b => ({ start: b.start?.toISOString(), end: b.end?.toISOString() }))
+      })));
+      
+      return sessions;
+    }
+
+    // 時間帯のバーを作成
+    function createBarsForHour(hour, date, workSessions, punches) {
+      const bars = [];
+      
+      // 日付オブジェクトから時間帯を計算
+      const hourStart = new Date(date);
+      hourStart.setHours(hour, 0, 0, 0);
+      const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+      
+      workSessions.forEach(session => {
+        if (!session.start) return;
+        
+        const sessionStart = session.start instanceof Date ? session.start : new Date(session.start);
+        const sessionEnd = session.end ? (session.end instanceof Date ? session.end : new Date(session.end)) : new Date();
+        
+        // この時間帯に勤務時間が含まれるか
+        if (sessionStart <= hourEnd && sessionEnd >= hourStart) {
+          const barStart = new Date(Math.max(sessionStart.getTime(), hourStart.getTime()));
+          const barEnd = new Date(Math.min(sessionEnd.getTime(), hourEnd.getTime()));
+          
+          // 休憩時間を除外
+          let workStart = barStart;
+          let workEnd = barEnd;
+          
+          session.breaks.forEach(breakTime => {
+            if (breakTime.start && breakTime.end) {
+              const breakStart = breakTime.start instanceof Date ? breakTime.start : new Date(breakTime.start);
+              const breakEnd = breakTime.end instanceof Date ? breakTime.end : new Date(breakTime.end);
+              
+              if (breakStart < workEnd && breakEnd > workStart) {
+                // 休憩時間がこの時間帯に含まれる
+                if (breakStart <= hourStart && breakEnd >= hourEnd) {
+                  // 休憩バーを追加
+                  const breakBar = createBreakBar(hourStart, hourEnd, breakTime);
+                  bars.push(breakBar);
+                  return;
+                }
+              }
+            }
+          });
+          
+          // 勤務バーを作成
+          const minutes = barStart.getMinutes() + barStart.getSeconds() / 60;
+          const duration = (barEnd.getTime() - barStart.getTime()) / (60 * 60 * 1000);
+          const leftPercent = (minutes / 60) * 100;
+          const widthPercent = duration * 100;
+          
+          const bar = document.createElement('div');
+          bar.className = 'gantt-bar gantt-bar-work';
+          bar.style.left = `${leftPercent}%`;
+          bar.style.width = `${widthPercent}%`;
+          
+          // 出勤・退勤時刻を表示
+          if (sessionStart.getHours() === hour) {
+            bar.textContent = formatTime(sessionStart);
+            bar.title = `出勤: ${formatTime(sessionStart)}`;
+          } else if (sessionEnd && sessionEnd.getHours() === hour) {
+            bar.textContent = formatTime(sessionEnd);
+            bar.title = `退勤: ${formatTime(sessionEnd)}`;
+          } else {
+            bar.textContent = '勤務中';
+          }
+          
+          bars.push(bar);
+        }
+      });
+      
+      // 休憩時間のバーを追加
+      workSessions.forEach(session => {
+        session.breaks.forEach(breakTime => {
+          if (breakTime.start && breakTime.end) {
+            const breakStart = breakTime.start instanceof Date ? breakTime.start : new Date(breakTime.start);
+            const breakEnd = breakTime.end instanceof Date ? breakTime.end : new Date(breakTime.end);
+            
+            if (breakStart.getHours() === hour || breakEnd.getHours() === hour || 
+                (breakStart.getHours() < hour && breakEnd.getHours() > hour)) {
+              const bar = createBreakBar(hourStart, hourEnd, breakTime);
+              bars.push(bar);
+            }
+          }
+        });
+      });
+      
+      // 打刻がない場合
+      if (punches.length === 0) {
+        const bar = document.createElement('div');
+        bar.className = 'gantt-bar gantt-bar-empty';
+        bar.style.left = '0%';
+        bar.style.width = '100%';
+        bar.textContent = '未打刻';
+        bars.push(bar);
+      }
+      
+      return bars;
+    }
+
+    // 休憩バーを作成
+    function createBreakBar(hourStart, hourEnd, breakTime) {
+      const breakStart = breakTime.start instanceof Date ? breakTime.start : new Date(breakTime.start);
+      const breakEnd = breakTime.end instanceof Date ? breakTime.end : new Date(breakTime.end);
+      
+      const barStart = new Date(Math.max(breakStart.getTime(), hourStart.getTime()));
+      const barEnd = new Date(Math.min(breakEnd.getTime(), hourEnd.getTime()));
+      
+      const minutes = barStart.getMinutes() + barStart.getSeconds() / 60;
+      const duration = (barEnd.getTime() - barStart.getTime()) / (60 * 60 * 1000);
+      const leftPercent = (minutes / 60) * 100;
+      const widthPercent = duration * 100;
+      
+      const bar = document.createElement('div');
+      bar.className = 'gantt-bar gantt-bar-break';
+      bar.style.left = `${leftPercent}%`;
+      bar.style.width = `${widthPercent}%`;
+      bar.textContent = '休憩';
+      bar.title = `休憩: ${formatTime(breakStart)}-${formatTime(breakEnd)}`;
+      
+      return bar;
+    }
+
+    // タイトルを更新
+    function updateTitle(dateStr, scale = 'day') {
+      const date = new Date(dateStr + 'T00:00:00');
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const title = document.getElementById('gantt-title');
+      
+      if (scale === 'day') {
+        const weekday = weekdays[date.getDay()];
+        title.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekday}）`;
+      } else if (scale === 'week') {
+        // 週の開始日と終了日を計算
+        const startOfWeek = new Date(date);
+        const dayOfWeek = date.getDay();
+        startOfWeek.setDate(date.getDate() - dayOfWeek); // 日曜日に調整
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        title.textContent = `${startOfWeek.getFullYear()}年${startOfWeek.getMonth() + 1}月${startOfWeek.getDate()}日〜${endOfWeek.getMonth() + 1}月${endOfWeek.getDate()}日（週）`;
+      } else if (scale === 'month') {
+        title.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月（月）`;
+      }
+    }
+
+    // フィルタイベントリスナーを設定
+    function setupFilterListeners() {
+      const applyFilterBtn = document.getElementById('apply-filter');
+      if (applyFilterBtn) {
+        applyFilterBtn.addEventListener('click', async function() {
+          console.log('フィルタ適用ボタンがクリックされました');
+          await loadGanttData();
+        });
+      }
+      
+      // 日付フィルタの変更時にも自動的に再読み込み
+      const dateInput = document.getElementById('filter-date');
+      if (dateInput) {
+        dateInput.addEventListener('change', async function() {
+          console.log('日付フィルタが変更されました:', this.value);
+          await loadGanttData();
+        });
+      }
+    }
+
+    // ズーム・パン機能を設定
+    function setupZoomPanControls() {
+      const container = document.getElementById('gantt-container');
+      const scaleSelect = document.getElementById('gantt-scale');
+      const zoomInBtn = document.getElementById('zoom-in');
+      const zoomOutBtn = document.getElementById('zoom-out');
+      const zoomResetBtn = document.getElementById('zoom-reset');
+      const panLeftBtn = document.getElementById('pan-left');
+      const panRightBtn = document.getElementById('pan-right');
+      const title = document.getElementById('gantt-title');
+
+      let currentZoom = 1;
+      let currentPan = 0;
+
+      // スケール変更
+      scaleSelect.addEventListener('change', async function() {
+        const scale = this.value;
+        console.log('スケール変更:', scale);
+        
+        // スケール変更時にデータを再読み込み
+        await loadGanttData();
+      });
+
+      // ズーム機能
+      zoomInBtn.addEventListener('click', function() {
+        currentZoom = Math.min(currentZoom * 1.2, 3);
+        applyTransform();
+      });
+
+      zoomOutBtn.addEventListener('click', function() {
+        currentZoom = Math.max(currentZoom / 1.2, 0.5);
+        applyTransform();
+      });
+
+      zoomResetBtn.addEventListener('click', function() {
+        currentZoom = 1;
+        currentPan = 0;
+        applyTransform();
+      });
+
+      // パン機能
+      panLeftBtn.addEventListener('click', function() {
+        currentPan -= 100;
+        applyTransform();
+      });
+
+      panRightBtn.addEventListener('click', function() {
+        currentPan += 100;
+        applyTransform();
+      });
+
+      function applyTransform() {
+        container.style.transform = `translateX(${currentPan}px) scale(${currentZoom})`;
+      }
+
+      // キーボード操作（アクセシビリティ対応）
+      container.setAttribute('tabindex', '0');
+      container.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+          currentPan -= 50;
+          applyTransform();
+        } else if (e.key === 'ArrowRight') {
+          currentPan += 50;
+          applyTransform();
+        } else if (e.key === '+' || e.key === '=') {
+          currentZoom = Math.min(currentZoom * 1.1, 3);
+          applyTransform();
+        } else if (e.key === '-') {
+          currentZoom = Math.max(currentZoom / 1.1, 0.5);
+          applyTransform();
+        }
+      });
+    }
+  </script>
+  <script src="../scripts/common.js"></script>
+</body>
+</html>
+

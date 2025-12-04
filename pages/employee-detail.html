@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>従業員詳細 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="breadcrumb">
+      <span class="breadcrumb-item"><a href="employees.html">従業員管理</a></span>
+      <span class="breadcrumb-item active">従業員詳細</span>
+    </div>
+
+    <div class="page-header">
+      <h1 class="page-title">従業員詳細</h1>
+      <div class="page-actions">
+        <button class="btn btn-secondary">編集</button>
+        <button class="btn btn-danger">削除</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2" style="margin-bottom: var(--spacing-xl);">
+      <!-- 基本情報 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">基本情報</h2>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">社員番号:</div>
+            <div>EMP001</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">氏名:</div>
+            <div>山田太郎</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">メール:</div>
+            <div>yamada@example.com</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">部署:</div>
+            <div>営業部</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">雇用形態:</div>
+            <div>正社員</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">雇用日:</div>
+            <div>2020-04-01</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">ステータス:</div>
+            <div><span class="badge badge-success">在籍</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 権限情報 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">権限情報</h2>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">役割:</div>
+            <div><span class="badge badge-primary">Employee</span></div>
+          </div>
+          <div style="margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">権限範囲:</div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+              - 自分の打刻・申請・閲覧
+            </div>
+          </div>
+          <div>
+            <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">最終ログイン:</div>
+            <div>2025-01-15 09:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 勤怠統計 -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">今月の勤怠統計</h2>
+      </div>
+      <div class="card-body">
+        <div class="grid grid-cols-4">
+          <div class="stats-card">
+            <div class="stats-card-label">実働時間</div>
+            <div class="stats-card-value">162.5h</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-card-label">残業時間</div>
+            <div class="stats-card-value">12.5h</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-card-label">遅刻回数</div>
+            <div class="stats-card-value">1回</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-card-label">早退回数</div>
+            <div class="stats-card-value">0回</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+

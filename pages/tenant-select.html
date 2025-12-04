@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テナント選択 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <div class="auth-layout">
+    <div class="auth-container" style="max-width: 600px;">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">勤怠管理</div>
+          <h1 class="auth-title">テナント選択</h1>
+          <p class="auth-subtitle">アクセスする企業を選択してください</p>
+        </div>
+
+        <div style="margin-bottom: var(--spacing-lg);">
+          <div class="card" style="margin-bottom: var(--spacing-md); cursor: pointer; transition: transform var(--transition-base), box-shadow var(--transition-base);" 
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'"
+               onmouseout="this.style.transform=''; this.style.boxShadow='var(--shadow-sm)'"
+               onclick="window.location.href='../dashboard.html'">
+            <div class="card-body">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <h3 style="font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-xs);">株式会社サンプル</h3>
+                  <p style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">営業部 / マネージャー</p>
+                </div>
+                <span style="font-size: var(--font-size-xl);">→</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--spacing-md); cursor: pointer; transition: transform var(--transition-base), box-shadow var(--transition-base);" 
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'"
+               onmouseout="this.style.transform=''; this.style.boxShadow='var(--shadow-sm)'"
+               onclick="window.location.href='../dashboard.html'">
+            <div class="card-body">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <h3 style="font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-xs);">株式会社テクノロジー</h3>
+                  <p style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">開発部 / 従業員</p>
+                </div>
+                <span style="font-size: var(--font-size-xl);">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="auth-footer">
+          <p><a href="../index.html">ログイン画面に戻る</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

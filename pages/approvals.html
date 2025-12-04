@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>承認 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link active" style="position: relative;">
+          申請
+          <span class="badge badge-error" style="position: absolute; top: -8px; right: -8px; font-size: 10px; padding: 2px 6px;">3</span>
+        </a>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">承認キュー</h1>
+      <p class="page-description">承認待ちの申請を確認・承認・差戻しできます</p>
+    </div>
+
+    <!-- フィルタバー -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label">申請種類:</label>
+        <select class="form-select filter-input">
+          <option value="">すべて</option>
+          <option value="edit">修正申請</option>
+          <option value="overtime">残業申請</option>
+          <option value="leave">休暇申請</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">申請者:</label>
+        <input type="text" class="form-input filter-input" placeholder="検索...">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">対象日:</label>
+        <input type="date" class="form-input filter-input">
+      </div>
+      <div class="filter-group">
+        <button class="btn btn-secondary">フィルタ適用</button>
+      </div>
+    </div>
+
+    <!-- 承認待ち一覧 -->
+    <div class="card">
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table" id="approvals-table">
+            <thead>
+              <tr>
+                <th>申請者</th>
+                <th>申請種類</th>
+                <th>対象日</th>
+                <th>申請内容</th>
+                <th>申請日時</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 動的に生成されます -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 承認詳細モーダル -->
+    <div id="modal-approval-detail" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">申請詳細</h2>
+          <a href="#" class="modal-close">&times;</a>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: var(--spacing-lg);">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">申請者:</div>
+              <div>山田太郎</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">申請日:</div>
+              <div>2025-01-15 10:30</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">種類:</div>
+              <div>修正申請</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">対象日:</div>
+              <div>2025-01-15</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">申請内容:</div>
+              <div>出勤時刻の修正（09:00 → 08:30）</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <div style="font-weight: 600; color: var(--text-secondary);">申請理由:</div>
+              <div>電車の遅延により出勤時刻が遅れました。実際の出勤時刻は8時30分です。</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="approval-comment" class="form-label">承認コメント</label>
+            <textarea 
+              id="approval-comment" 
+              name="approval-comment" 
+              class="form-textarea" 
+              placeholder="承認・差戻しの理由を記入してください（任意）"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button class="btn btn-danger">差戻し</button>
+          <button class="btn btn-success">承認</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 承認管理 - API連携
+    // ============================================
+
+    let pendingRequests = [];
+    let currentRequestId = null;
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadPendingRequests();
+      setupEventListeners();
+      updateHeaderUserInfo();
+    });
+
+    // 承認待ち申請一覧を読み込み
+    async function loadPendingRequests() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/requests?status=pending&limit=1000`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          pendingRequests = data.data.items || [];
+          renderPendingRequests();
+        } else {
+          console.error('承認待ち申請一覧取得エラー:', data);
+          alert('承認待ち申請一覧の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('承認待ち申請一覧の読み込みエラー:', error);
+        alert('承認待ち申請一覧の取得に失敗しました');
+      }
+    }
+
+    // 承認待ち申請を描画
+    function renderPendingRequests() {
+      const tbody = document.querySelector('#approvals-table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (pendingRequests.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">承認待ちの申請がありません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      pendingRequests.forEach(request => {
+        const row = document.createElement('tr');
+        
+        const typeLabels = {
+          'edit': '修正申請',
+          'overtime': '残業申請',
+          'leave': '休暇申請',
+          'others': 'その他'
+        };
+
+        const createdDate = new Date(request.created_at);
+        const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
+        
+        const payload = typeof request.payload === 'string' ? JSON.parse(request.payload) : request.payload;
+        const content = payload.content || payload.description || '申請内容';
+
+        row.innerHTML = `
+          <td>${request.employee_name}</td>
+          <td>${typeLabels[request.type] || request.type}</td>
+          <td>${request.target_date}</td>
+          <td>${content}</td>
+          <td>${createdDateStr}</td>
+          <td>
+            <div style="display: flex; gap: var(--spacing-xs);">
+              <button class="btn btn-sm btn-primary" onclick="showApprovalDetail('${request.id}')">詳細</button>
+              <button class="btn btn-sm btn-success" onclick="approveRequest('${request.id}')">承認</button>
+              <button class="btn btn-sm btn-danger" onclick="rejectRequest('${request.id}')">差戻し</button>
+            </div>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // 承認詳細を表示
+    async function showApprovalDetail(requestId) {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/requests/${requestId}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          const request = data.data;
+          const modal = document.getElementById('modal-approval-detail');
+          if (!modal) return;
+
+          currentRequestId = requestId;
+
+          const typeLabels = {
+            'edit': '修正申請',
+            'overtime': '残業申請',
+            'leave': '休暇申請',
+            'others': 'その他'
+          };
+
+          const createdDate = new Date(request.created_at);
+          const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
+          
+          const payload = typeof request.payload === 'string' ? JSON.parse(request.payload) : request.payload;
+          const content = payload.content || payload.description || '申請内容';
+
+          modal.querySelector('.modal-body').innerHTML = `
+            <div style="margin-bottom: var(--spacing-lg);">
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">申請者:</div>
+                <div>${request.employee_name}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">申請日:</div>
+                <div>${createdDateStr}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">種類:</div>
+                <div>${typeLabels[request.type] || request.type}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">対象日:</div>
+                <div>${request.target_date}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">申請内容:</div>
+                <div>${content}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; color: var(--text-secondary);">申請理由:</div>
+                <div>${request.reason}</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="approval-comment" class="form-label">承認コメント</label>
+              <textarea 
+                id="approval-comment" 
+                name="approval-comment" 
+                class="form-textarea" 
+                placeholder="承認・差戻しの理由を記入してください（任意）"
+              ></textarea>
+            </div>
+          `;
+
+          modal.style.display = 'block';
+        } else {
+          alert('申請詳細の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('申請詳細の取得エラー:', error);
+        alert('申請詳細の取得に失敗しました');
+      }
+    }
+
+    // 申請を承認
+    async function approveRequest(requestId) {
+      if (!confirm('この申請を承認しますか？')) {
+        return;
+      }
+
+      try {
+        const comment = document.getElementById('approval-comment')?.value || '';
+        
+        const response = await apiFetch(`${API_BASE_URL}/requests/${requestId}/approve`, {
+          method: 'POST',
+          body: JSON.stringify({
+            comment: comment
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('申請を承認しました');
+          document.getElementById('modal-approval-detail').style.display = 'none';
+          await loadPendingRequests();
+        } else {
+          alert('申請の承認に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('申請承認エラー:', error);
+        alert('申請の承認に失敗しました');
+      }
+    }
+
+    // 申請を差戻し
+    async function rejectRequest(requestId) {
+      const rejectionReason = prompt('差戻し理由を入力してください:');
+      if (!rejectionReason) {
+        return;
+      }
+
+      if (!confirm('この申請を差戻ししますか？')) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/requests/${requestId}/reject`, {
+          method: 'POST',
+          body: JSON.stringify({
+            rejection_reason: rejectionReason
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('申請を差戻ししました');
+          document.getElementById('modal-approval-detail').style.display = 'none';
+          await loadPendingRequests();
+        } else {
+          alert('申請の差戻しに失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('申請差戻しエラー:', error);
+        alert('申請の差戻しに失敗しました');
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // モーダルを閉じる
+      document.querySelectorAll('.modal-close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          this.closest('.modal').style.display = 'none';
+        });
+      });
+
+      // モーダル外クリックで閉じる
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.style.display = 'none';
+          }
+        });
+      });
+
+      // 承認詳細モーダルのボタン
+      const modal = document.getElementById('modal-approval-detail');
+      if (modal) {
+        const approveBtn = modal.querySelector('.btn-success');
+        const rejectBtn = modal.querySelector('.btn-danger');
+        
+        if (approveBtn) {
+          approveBtn.addEventListener('click', function() {
+            if (currentRequestId) {
+              approveRequest(currentRequestId);
+            }
+          });
+        }
+        
+        if (rejectBtn) {
+          rejectBtn.addEventListener('click', function() {
+            if (currentRequestId) {
+              rejectRequest(currentRequestId);
+            }
+          });
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログイン - 勤怠管理システム</title>
+  <link rel="stylesheet" href="styles/common.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+  <div class="auth-layout">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">勤怠管理</div>
+          <h1 class="auth-title">ログイン</h1>
+          <p class="auth-subtitle">メールアドレスとパスワードを入力してください</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email" class="form-label required">メールアドレス</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-input" 
+              placeholder="example@company.com"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label required">パスワード</label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input" 
+              placeholder="••••••••"
+              required
+            >
+          </div>
+
+          <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+              <input type="checkbox" name="remember" id="remember" style="cursor: pointer;">
+              <span style="font-size: var(--font-size-sm);">ログイン状態を保持</span>
+            </label>
+            <a href="pages/password-reset.html" style="font-size: var(--font-size-sm);">パスワードを忘れた場合</a>
+          </div>
+
+          <div id="errorMessage" class="alert alert-error" style="display: none; margin-bottom: var(--spacing-md);"></div>
+          <div id="successMessage" class="alert alert-success" style="display: none; margin-bottom: var(--spacing-md);"></div>
+
+          <button type="submit" class="btn btn-primary w-full" style="margin-top: var(--spacing-lg);" id="submitBtn">
+            ログイン
+          </button>
+
+          <!-- MFA（多要素認証）準備: 将来の必須化に対応 -->
+          <div class="form-group" style="margin-top: var(--spacing-md);">
+            <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+              <input type="checkbox" name="mfa_enabled" style="cursor: pointer;">
+              <span style="font-size: var(--font-size-sm);">多要素認証を使用する（任意）</span>
+            </label>
+            <div class="form-help" style="font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs);">
+              将来、多要素認証が必須になる場合に備えて設定できます
+            </div>
+          </div>
+        </form>
+
+        <div class="auth-footer">
+          <p>初めてご利用の方は <a href="pages/register.html">会員登録</a> から始めてください</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:8080/api.php';
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+
+      // エラーメッセージを非表示
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+
+      // フォームデータを取得
+      const formData = {
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'ログイン中...';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // ユーザー情報をlocalStorageに保存
+          if (data.data && data.data.user) {
+            localStorage.setItem('user', JSON.stringify(data.data.user));
+          }
+
+          successMessage.textContent = data.message || 'ログインに成功しました';
+          successMessage.style.display = 'block';
+          
+          // 1秒後にダッシュボードにリダイレクト
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+        } else {
+          errorMessage.textContent = data.error?.message || 'ログインに失敗しました';
+          errorMessage.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'ログイン';
+        }
+      } catch (error) {
+        errorMessage.textContent = 'ネットワークエラーが発生しました: ' + error.message;
+        errorMessage.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'ログイン';
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>打刻 - 勤怠管理システム</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <a href="../dashboard.html" class="header-logo">勤怠管理</a>
+        <nav class="header-nav">
+          <a href="../dashboard.html" class="header-nav-link">ダッシュボード</a>
+          <a href="punch.html" class="header-nav-link active">打刻</a>
+          <a href="gantt.html" class="header-nav-link">ガントチャート</a>
+          <a href="reports.html" class="header-nav-link">レポート</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <a href="requests.html" class="header-nav-link">申請</a>
+        <button id="time-mode-button" onclick="showTimeModeModal()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">現実時間</button>
+        <button onclick="logout()" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-sm);">ログアウト</button>
+        <a href="profile.html" class="header-user" style="text-decoration: none;">
+          <div class="header-user-avatar"></div>
+          <span class="header-user-name"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 時間モード設定モーダル -->
+  <div id="time-mode-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 class="modal-title">時間モード設定</h2>
+        <button class="modal-close" onclick="closeTimeModeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer; margin-bottom: var(--spacing-md);">
+            <input type="radio" name="time-mode" id="time-mode-realtime" value="realtime" checked style="cursor: pointer;">
+            <span>現実時間を採用</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer; margin-bottom: var(--spacing-md);">
+            <input type="radio" name="time-mode" id="time-mode-virtual" value="virtual" style="cursor: pointer;">
+            <span>仮想時間を採用</span>
+          </label>
+        </div>
+        
+        <div id="virtual-time-settings" style="display: none; margin-top: var(--spacing-lg); padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--radius-md);">
+          <div class="form-group">
+            <label for="virtual-date" class="form-label required">日付</label>
+            <input type="date" id="virtual-date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label for="virtual-time" class="form-label required">時刻</label>
+            <input type="time" id="virtual-time" class="form-input" required>
+          </div>
+          <div class="form-help" style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+            注意: 仮想時間は過去の時間に戻すことはできません。
+          </div>
+        </div>
+        
+        <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">
+          <button onclick="resetDatabase()" class="btn btn-sm btn-danger" style="width: 100%;">データベースをリセット</button>
+          <div class="form-help" style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: var(--spacing-xs);">
+            すべてのデータを削除し、スキーマを再適用します。時間モードも現実時間にリセットされます。
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="saveTimeMode()" class="btn btn-primary">保存</button>
+        <button onclick="closeTimeModeModal()" class="btn btn-secondary">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
+        <a href="../dashboard.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📊</span>
+          <span class="sidebar-menu-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="punch.html" class="sidebar-menu-link active">
+          <span class="sidebar-menu-icon">⏰</span>
+          <span class="sidebar-menu-label">打刻</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="gantt.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📅</span>
+          <span class="sidebar-menu-label">ガントチャート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="requests.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📝</span>
+          <span class="sidebar-menu-label">申請・承認</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="employees.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">👥</span>
+          <span class="sidebar-menu-label">従業員管理</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="company-settings.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">⚙️</span>
+          <span class="sidebar-menu-label">企業設定</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="reports.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">📈</span>
+          <span class="sidebar-menu-label">レポート</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="payslip.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">💰</span>
+          <span class="sidebar-menu-label">給与明細</span>
+        </a>
+      </li>
+      <li class="sidebar-menu-item">
+        <a href="audit-logs.html" class="sidebar-menu-link">
+          <span class="sidebar-menu-icon">🔍</span>
+          <span class="sidebar-menu-label">監査ログ</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">打刻</h1>
+      <p class="page-description">出勤・退勤・休憩の打刻を行います</p>
+      <div class="page-actions">
+        <a href="punch-proxy.html" class="btn btn-secondary">代理打刻</a>
+        <button class="btn btn-sm btn-secondary" id="download-logs" title="コンソールログをダウンロード" style="margin-left: var(--spacing-sm);">📥 ログ</button>
+      </div>
+    </div>
+
+    <!-- 打刻カード -->
+    <div class="grid grid-cols-2" style="margin-bottom: var(--spacing-xl);">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">今日の打刻状況</h2>
+        </div>
+        <div class="card-body" style="text-align: center;">
+          <div id="today-date" style="font-size: var(--font-size-4xl); font-weight: 700; color: var(--color-primary); margin-bottom: var(--spacing-lg);">
+            -
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-xs);">出勤</div>
+              <div id="clock-in-time" style="font-size: var(--font-size-2xl); font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-xs);">退勤</div>
+              <div id="clock-out-time" style="font-size: var(--font-size-2xl); font-weight: 600;">-</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-xs);">休憩開始</div>
+              <div id="break-in-time" style="font-size: var(--font-size-xl); font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-xs);">休憩終了</div>
+              <div id="break-out-time" style="font-size: var(--font-size-xl); font-weight: 600;">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">打刻操作</h2>
+        </div>
+        <div class="card-body" style="display: flex; flex-direction: column; gap: var(--spacing-md);">
+          <button class="btn btn-primary btn-lg" style="width: 100%;" data-punch-type="in" title="打刻タイプ: in（出勤）">
+            <span>⏰</span>
+            <span>出勤</span>
+          </button>
+          <button class="btn btn-secondary btn-lg" style="width: 100%;" data-punch-type="break_in" title="打刻タイプ: break_in（休憩開始）">
+            <span>🍽️</span>
+            <span>休憩開始</span>
+          </button>
+          <button class="btn btn-secondary btn-lg" style="width: 100%;" data-punch-type="break_out" title="打刻タイプ: break_out（休憩終了）">
+            <span>☕</span>
+            <span>休憩終了</span>
+          </button>
+          <button class="btn btn-success btn-lg" style="width: 100%;" data-punch-type="out" title="打刻タイプ: out（退勤）">
+            <span>🏠</span>
+            <span>退勤</span>
+          </button>
+          <div class="form-help" style="font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-xs); text-align: center;">
+            打刻タイプ: in（出勤）/ out（退勤）/ break_in（休憩開始）/ break_out（休憩終了）<br>
+            仕様書5.4に基づく
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 未打刻アラート -->
+    <div id="no-punch-alert" class="alert alert-warning" style="margin-bottom: var(--spacing-xl); display: none;">
+      <strong>注意:</strong> 本日の退勤打刻がまだ行われていません。退勤時刻になったら忘れずに打刻してください。
+    </div>
+
+    <!-- 最近の打刻履歴 -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">最近の打刻履歴</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>種類</th>
+                <th>打刻タイプ</th>
+                <th>時刻</th>
+                <th>打刻方法（source）</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody id="punch-history-tbody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-secondary);">読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 打刻ページ - API連携
+    // ============================================
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await initializePunchPage();
+      
+      // 仮想時間モード変更時にデータを再読み込み
+      setupTimeModeChangeListener();
+      
+      // ログダウンロードボタンの設定
+      setupLogDownloadButton();
+    });
+    
+    // ログダウンロードボタンの設定
+    function setupLogDownloadButton() {
+      const downloadBtn = document.getElementById('download-logs');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+          const format = prompt('ログの形式を選択してください:\n1. JSON (推奨)\n2. TXT\n3. CSV\n\n番号を入力してください (1-3):', '1');
+          
+          if (format === '1' || format === 'json' || format === '') {
+            downloadLogs('json');
+          } else if (format === '2' || format === 'txt') {
+            downloadLogs('txt');
+          } else if (format === '3' || format === 'csv') {
+            downloadLogs('csv');
+          } else {
+            alert('無効な形式です。JSON形式でダウンロードします。');
+            downloadLogs('json');
+          }
+        });
+      }
+    }
+    
+    // 仮想時間モード変更のリスナーを設定
+    function setupTimeModeChangeListener() {
+      // localStorageの変更を監視（別タブでの変更も検知）
+      window.addEventListener('storage', function(e) {
+        if (e.key === TIME_MODE_STORAGE_KEY || e.key === VIRTUAL_TIME_STORAGE_KEY) {
+          // 時間モードが変更されたらデータを再読み込み
+          loadTodayPunches();
+          loadPunchHistory();
+        }
+      });
+      
+      // カスタムイベントで時間モード変更を検知
+      window.addEventListener('timeModeChanged', function() {
+        loadTodayPunches();
+        loadPunchHistory();
+      });
+    }
+
+    // ページ初期化
+    async function initializePunchPage() {
+      // 打刻ボタンにイベントリスナーを追加
+      setupPunchButtons();
+      
+      // 今日の打刻状況を読み込み
+      await loadTodayPunches();
+      
+      // 打刻履歴を読み込み
+      await loadPunchHistory();
+    }
+
+    // 打刻ボタンのセットアップ
+    function setupPunchButtons() {
+      const punchButtons = document.querySelectorAll('[data-punch-type]');
+      
+      punchButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+          const punchType = this.getAttribute('data-punch-type');
+          await handlePunch(punchType);
+        });
+      });
+    }
+
+    // 打刻処理
+    async function handlePunch(punchType) {
+      const button = document.querySelector(`[data-punch-type="${punchType}"]`);
+      const originalText = button.innerHTML;
+      
+      // ボタンを無効化
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+      
+      try {
+        // 現在時刻を取得（仮想時間モード対応）
+        const currentTime = getCurrentTime();
+        const occurredAt = formatDateTimeForAPI(currentTime);
+        
+        // 打刻種類の日本語名
+        const typeNames = {
+          'in': '出勤',
+          'out': '退勤',
+          'break_in': '休憩開始',
+          'break_out': '休憩終了'
+        };
+        
+        const requestBody = {
+          type: punchType,
+          occurred_at: occurredAt,
+          note: typeNames[punchType] || punchType,
+          device: navigator.userAgent
+        };
+        
+        const response = await apiFetch(`${API_BASE_URL}/punches`, {
+          method: 'POST',
+          body: JSON.stringify(requestBody)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          // 成功メッセージを表示
+          showMessage('打刻が完了しました', 'success');
+          
+          // 今日の打刻状況と履歴を更新
+          await loadTodayPunches();
+          await loadPunchHistory();
+        } else {
+          // エラーメッセージを表示
+          const errorMsg = data.error?.message || '打刻に失敗しました';
+          showMessage(errorMsg, 'error');
+        }
+      } catch (error) {
+        console.error('打刻エラー:', error);
+        showMessage('打刻に失敗しました: ' + error.message, 'error');
+      } finally {
+        // ボタンを再有効化
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }
+
+    // 今日の打刻状況を読み込み
+    async function loadTodayPunches() {
+      try {
+        const today = getCurrentTime(); // 仮想時間モード対応
+        const todayStr = formatDate(today);
+        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        const tomorrowStr = formatDate(tomorrow);
+        
+        const response = await apiFetch(`${API_BASE_URL}/punches?from=${todayStr} 00:00:00&to=${tomorrowStr} 00:00:00&limit=100`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          updateTodayPunchesDisplay(data.data.items, todayStr);
+        }
+      } catch (error) {
+        console.error('今日の打刻状況の読み込みエラー:', error);
+      }
+    }
+
+    // 今日の打刻状況を表示更新
+    function updateTodayPunchesDisplay(punches, dateStr) {
+      // 日付を更新
+      const dateElement = document.getElementById('today-date');
+      if (dateElement) {
+        dateElement.textContent = dateStr;
+      }
+      
+      // 打刻データを整理
+      const todayPunches = {
+        in: null,
+        out: null,
+        break_in: [],
+        break_out: []
+      };
+      
+      punches.forEach(punch => {
+        if (punch.type === 'in') {
+          todayPunches.in = punch;
+        } else if (punch.type === 'out') {
+          todayPunches.out = punch;
+        } else if (punch.type === 'break_in') {
+          todayPunches.break_in.push(punch);
+        } else if (punch.type === 'break_out') {
+          todayPunches.break_out.push(punch);
+        }
+      });
+      
+      // 出勤時刻を表示
+      const clockInElement = document.getElementById('clock-in-time');
+      if (clockInElement) {
+        clockInElement.textContent = todayPunches.in 
+          ? formatTime(todayPunches.in.occurred_at) 
+          : '-';
+      }
+      
+      // 退勤時刻を表示
+      const clockOutElement = document.getElementById('clock-out-time');
+      if (clockOutElement) {
+        clockOutElement.textContent = todayPunches.out 
+          ? formatTime(todayPunches.out.occurred_at) 
+          : '-';
+      }
+      
+      // 休憩開始時刻を表示（最新のもの）
+      const breakInElement = document.getElementById('break-in-time');
+      if (breakInElement) {
+        const latestBreakIn = todayPunches.break_in.length > 0 
+          ? todayPunches.break_in[todayPunches.break_in.length - 1]
+          : null;
+        breakInElement.textContent = latestBreakIn 
+          ? formatTime(latestBreakIn.occurred_at) 
+          : '-';
+      }
+      
+      // 休憩終了時刻を表示（最新のもの）
+      const breakOutElement = document.getElementById('break-out-time');
+      if (breakOutElement) {
+        const latestBreakOut = todayPunches.break_out.length > 0 
+          ? todayPunches.break_out[todayPunches.break_out.length - 1]
+          : null;
+        breakOutElement.textContent = latestBreakOut 
+          ? formatTime(latestBreakOut.occurred_at) 
+          : '-';
+      }
+      
+      // 未打刻アラートの表示/非表示
+      const alertElement = document.getElementById('no-punch-alert');
+      if (alertElement) {
+        if (!todayPunches.out) {
+          alertElement.style.display = 'block';
+        } else {
+          alertElement.style.display = 'none';
+        }
+      }
+    }
+
+    // 打刻履歴を読み込み
+    async function loadPunchHistory() {
+      try {
+        const today = getCurrentTime(); // 仮想時間モード対応
+        const fromDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000); // 7日前
+        const fromStr = formatDate(fromDate) + ' 00:00:00';
+        const toStr = formatDate(today) + ' 23:59:59';
+        
+        const response = await apiFetch(`${API_BASE_URL}/punches?from=${fromStr}&to=${toStr}&limit=50`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          updatePunchHistoryDisplay(data.data.items);
+        }
+      } catch (error) {
+        console.error('打刻履歴の読み込みエラー:', error);
+      }
+    }
+
+    // 打刻履歴を表示更新
+    function updatePunchHistoryDisplay(punches) {
+      const tbody = document.getElementById('punch-history-tbody');
+      if (!tbody) return;
+      
+      // 既存の行をクリア
+      tbody.innerHTML = '';
+      
+      if (punches.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="6" style="text-align: center; color: var(--text-secondary);">打刻履歴がありません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+      
+      // 打刻データを時系列でソート（新しい順）
+      const sortedPunches = [...punches].sort((a, b) => {
+        return new Date(b.occurred_at) - new Date(a.occurred_at);
+      });
+      
+      sortedPunches.forEach(punch => {
+        const row = document.createElement('tr');
+        
+        const date = new Date(punch.occurred_at);
+        const dateStr = formatDate(date);
+        const timeStr = formatTime(punch.occurred_at);
+        
+        const typeNames = {
+          'in': { name: '出勤', badge: 'badge-primary' },
+          'out': { name: '退勤', badge: 'badge-success' },
+          'break_in': { name: '休憩開始', badge: 'badge-info' },
+          'break_out': { name: '休憩終了', badge: 'badge-info' }
+        };
+        
+        const typeInfo = typeNames[punch.type] || { name: punch.type, badge: 'badge-secondary' };
+        
+        row.innerHTML = `
+          <td>${dateStr}</td>
+          <td><span class="badge ${typeInfo.badge}">${typeInfo.name}</span></td>
+          <td><code>${punch.type}</code></td>
+          <td>${timeStr}</td>
+          <td>${punch.source || 'web'}</td>
+          <td>${punch.note || '-'}</td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // 注意: formatDateTimeForAPI, formatDate, formatTime は common.js で定義されています
+
+    // メッセージを表示
+    function showMessage(message, type) {
+      // 既存のメッセージを削除
+      const existingMessage = document.querySelector('.punch-message');
+      if (existingMessage) {
+        existingMessage.remove();
+      }
+      
+      // 新しいメッセージを作成
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} punch-message`;
+      messageDiv.style.marginBottom = 'var(--spacing-md)';
+      messageDiv.textContent = message;
+      
+      // ページヘッダーの下に挿入
+      const pageHeader = document.querySelector('.page-header');
+      if (pageHeader && pageHeader.parentNode) {
+        pageHeader.parentNode.insertBefore(messageDiv, pageHeader.nextSibling);
+      }
+      
+      // 3秒後に自動的に削除
+      setTimeout(() => {
+        messageDiv.remove();
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
+

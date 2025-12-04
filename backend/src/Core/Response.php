@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Core;
+
+/**
+ * HTTPレスポンス処理クラス
+ */
+class Response
+{
+    private int $statusCode = 200;
+    private array $headers = [];
+    private $data = null;
+
+    /**
+     * ステータスコードを設定
+     */
+    public function setStatusCode(int $code): self
+    {
+        $this->statusCode = $code;
+        return $this;
+    }
+
+    /**
+     * ヘッダーを設定
+     */
+    public function setHeader(string $name, string $value): self
+    {
+        $this->headers[$name] = $value;
+        return $this;
+    }
+
+    /**
+     * JSONレスポンスを送信
+     */
+    public function json($data, int $statusCode = 200): void
+    {
+        $this->statusCode = $statusCode;
+        $this->setHeader('Content-Type', 'application/json; charset=utf-8');
+        $this->sendHeaders();
+        http_response_code($this->statusCode);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    /**
+     * 成功レスポンスを送信
+     */
+    public function success($data = null, string $message = null, int $statusCode = 200): void
+    {
+        $response = ['success' => true];
+        if ($message !== null) {
+            $response['message'] = $message;
+        }
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
+        $this->json($response, $statusCode);
+    }
+
+    /**
+     * エラーレスポンスを送信
+     */
+    public function error(string $code, string $message, array $details = [], int $statusCode = 400): void
+    {
+        $response = [
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+            ]
+        ];
+        if (!empty($details)) {
+            $response['error']['details'] = $details;
+        }
+        $this->json($response, $statusCode);
+    }
+
+    /**
+     * ページング付きレスポンスを送信
+     */
+    public function paginated(array $data, int $total, int $page, int $limit): void
+    {
+        $this->setHeader('X-Total-Count', (string)$total);
+        $this->success([
+            'items' => $data,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'totalPages' => ceil($total / $limit),
+            ]
+        ]);
+    }
+
+    /**
+     * ヘッダーを送信
+     */
+    private function sendHeaders(): void
+    {
+        foreach ($this->headers as $name => $value) {
+            header("{$name}: {$value}");
+        }
+    }
+}
+
