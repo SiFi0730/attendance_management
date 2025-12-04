@@ -196,6 +196,119 @@
       </div>
     </div>
   </main>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 従業員招待 - API連携
+    // ============================================
+
+    let departments = [];
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadDepartments();
+      setupEventListeners();
+      updateHeaderUserInfo();
+    });
+
+    // 部署一覧を読み込み
+    async function loadDepartments() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          departments = data.data.items || data.data || [];
+          const select = document.getElementById('department');
+          if (select) {
+            select.innerHTML = '<option value="">選択してください</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              select.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('部署一覧の読み込みエラー:', error);
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await inviteEmployee();
+        });
+      }
+    }
+
+    // 従業員を招待
+    async function inviteEmployee() {
+      const employeeCode = document.getElementById('employee-code').value;
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const deptId = document.getElementById('department').value;
+      const employmentType = document.getElementById('employment-type').value;
+      const hireDate = document.getElementById('hire-date').value;
+      const role = document.getElementById('role').value;
+
+      if (!employeeCode || !name || !email || !employmentType || !hireDate || !role) {
+        alert('すべての必須項目を入力してください');
+        return;
+      }
+
+      // 雇用形態の変換
+      const employmentTypeMap = {
+        'full': 'full_time',
+        'part': 'part_time',
+        'contract': 'contract'
+      };
+      const mappedEmploymentType = employmentTypeMap[employmentType] || employmentType;
+
+      // 役割の変換
+      const roleMap = {
+        'employee': 'Employee',
+        'manager': 'Manager',
+        'admin': 'CompanyAdmin'
+      };
+      const mappedRole = roleMap[role] || role;
+
+      try {
+        const requestData = {
+          employee_code: employeeCode,
+          name: name,
+          email: email,
+          dept_id: deptId || null,
+          employment_type: mappedEmploymentType,
+          hire_date: hireDate,
+          role: mappedRole
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/employees/invite`, {
+          method: 'POST',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          const tempPassword = data.data.temp_password;
+          alert(`従業員を招待しました。\n一時パスワード: ${tempPassword}\n\n（実際の運用ではメールで送信されます）`);
+          window.location.href = 'employees.html';
+        } else {
+          console.error('従業員招待エラー:', data);
+          alert('従業員の招待に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('従業員招待エラー:', error);
+        alert('従業員の招待に失敗しました');
+      }
+    }
+  </script>
 </body>
 </html>
 

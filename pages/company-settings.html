@@ -394,6 +394,585 @@
     </div>
   </main>
   <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 企業設定 - API連携
+    // ============================================
+
+    let tenant = null;
+    let businessHours = [];
+    let ruleSet = null;
+    let holidays = [];
+    let currentTab = 'company';
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Promise.all([
+        loadTenant(),
+        loadBusinessHours(),
+        loadRuleSet(),
+        loadHolidays()
+      ]);
+      setupEventListeners();
+      updateHeaderUserInfo();
+    });
+
+    // テナント情報を読み込み
+    async function loadTenant() {
+      try {
+        // 現在のテナントIDを取得（セッションから）
+        const response = await apiFetch(`${API_BASE_URL}/tenants`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          tenant = Array.isArray(data.data) ? data.data[0] : data.data;
+          if (tenant) {
+            renderTenant();
+          }
+        }
+      } catch (error) {
+        console.error('テナント情報の読み込みエラー:', error);
+      }
+    }
+
+    // テナント情報を描画
+    function renderTenant() {
+      if (!tenant) return;
+
+      document.getElementById('company-name').value = tenant.name || '';
+      document.getElementById('timezone').value = tenant.timezone || 'Asia/Tokyo';
+      document.getElementById('locale').value = tenant.locale || 'ja';
+    }
+
+    // 営業時間を読み込み
+    async function loadBusinessHours() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/business-hours?scope_type=company`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          businessHours = data.data || [];
+          renderBusinessHours();
+        }
+      } catch (error) {
+        console.error('営業時間の読み込みエラー:', error);
+      }
+    }
+
+    // 営業時間を描画
+    function renderBusinessHours() {
+      // デフォルト値（月曜日から金曜日）
+      const defaultHours = {
+        1: { start: '09:00', end: '18:00' },
+        2: { start: '09:00', end: '18:00' },
+        3: { start: '09:00', end: '18:00' },
+        4: { start: '09:00', end: '18:00' },
+        5: { start: '09:00', end: '18:00' }
+      };
+
+      businessHours.forEach(bh => {
+        defaultHours[bh.weekday] = {
+          start: bh.start_time.substring(0, 5),
+          end: bh.end_time.substring(0, 5)
+        };
+      });
+
+      // 月曜日（1）の値を設定
+      if (defaultHours[1]) {
+        document.getElementById('work-start').value = defaultHours[1].start;
+        document.getElementById('work-end').value = defaultHours[1].end;
+      }
+    }
+
+    // 就業ルールを読み込み
+    async function loadRuleSet() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/rule-sets/current`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          ruleSet = data.data;
+          renderRuleSet();
+        }
+      } catch (error) {
+        console.error('就業ルールの読み込みエラー:', error);
+      }
+    }
+
+    // 就業ルールを描画
+    function renderRuleSet() {
+      if (!ruleSet || !ruleSet.config) return;
+
+      const config = ruleSet.config;
+      document.getElementById('work-type').value = config.work_type || 'fixed';
+      document.getElementById('overtime-calculation').value = config.overtime_calculation || 'daily';
+      document.getElementById('night-start').value = config.night_work_start || '22:00';
+      document.getElementById('night-end').value = config.night_work_end || '05:00';
+
+      if (config.rounding) {
+        document.getElementById('rounding-start').value = config.rounding.start || '5';
+        document.getElementById('rounding-end').value = config.rounding.end || '5';
+        document.getElementById('rounding-total').value = config.rounding.total || '5';
+      }
+    }
+
+    // 祝日一覧を読み込み
+    async function loadHolidays() {
+      try {
+        const currentYear = new Date().getFullYear();
+        const response = await apiFetch(`${API_BASE_URL}/holidays?scope_type=company&year=${currentYear}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          holidays = data.data || [];
+          renderHolidays();
+        }
+      } catch (error) {
+        console.error('祝日一覧の読み込みエラー:', error);
+      }
+    }
+
+    // 祝日一覧を描画
+    function renderHolidays() {
+      const tbody = document.querySelector('#tab-holidays .table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (holidays.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="4" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">祝日が登録されていません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      holidays.forEach(holiday => {
+        const row = document.createElement('tr');
+        const date = new Date(holiday.date);
+        const dateStr = date.toLocaleDateString('ja-JP');
+        
+        const typeBadges = {
+          'holiday': '<span class="badge badge-primary">祝日</span>',
+          'company_holiday': '<span class="badge badge-secondary">会社休日</span>',
+          'special': '<span class="badge badge-warning">特別休日</span>'
+        };
+
+        row.innerHTML = `
+          <td>${dateStr}</td>
+          <td>${holiday.name || '-'}</td>
+          <td>${typeBadges[holiday.type] || holiday.type}</td>
+          <td>
+            <button onclick="openEditHolidayModal('${holiday.id}')" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-xs);">編集</button>
+            <button onclick="deleteHoliday('${holiday.id}')" class="btn btn-sm btn-danger">削除</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // タブ切り替え
+      document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tab = this.getAttribute('href').substring(1);
+          currentTab = tab.replace('tab-', '');
+          
+          document.querySelectorAll('.tab-content').forEach(content => {
+            content.style.display = 'none';
+          });
+          document.getElementById(tab).style.display = 'block';
+          
+          document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+
+      // 会社情報フォーム
+      const companyForm = document.querySelector('#tab-company form');
+      if (companyForm) {
+        companyForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await saveTenant();
+        });
+      }
+
+      // 営業時間フォーム
+      const businessHoursForm = document.querySelector('#tab-business-hours form');
+      if (businessHoursForm) {
+        businessHoursForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await saveBusinessHours();
+        });
+      }
+
+      // 就業ルールフォーム
+      const rulesForm = document.querySelector('#tab-rules form');
+      if (rulesForm) {
+        rulesForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await saveRuleSet();
+        });
+      }
+
+      // 祝日追加ボタン
+      const addHolidayBtn = document.querySelector('#tab-holidays .btn-primary');
+      if (addHolidayBtn) {
+        addHolidayBtn.addEventListener('click', function() {
+          openNewHolidayModal();
+        });
+      }
+    }
+
+    // テナント情報を保存
+    async function saveTenant() {
+      if (!tenant) return;
+
+      const name = document.getElementById('company-name').value;
+      const timezone = document.getElementById('timezone').value;
+      const locale = document.getElementById('locale').value;
+
+      try {
+        const requestData = {
+          name: name,
+          timezone: timezone,
+          locale: locale
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/tenants/${tenant.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('会社情報を保存しました');
+          await loadTenant();
+        } else {
+          console.error('テナント更新エラー:', data);
+          alert('会社情報の保存に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('テナント更新エラー:', error);
+        alert('会社情報の保存に失敗しました');
+      }
+    }
+
+    // 営業時間を保存
+    async function saveBusinessHours() {
+      const workStart = document.getElementById('work-start').value;
+      const workEnd = document.getElementById('work-end').value;
+      const breakStart = document.getElementById('break-start').value;
+      const breakEnd = document.getElementById('break-end').value;
+
+      // 月曜日から金曜日（1-5）の営業時間を設定
+      const hours = [];
+      for (let weekday = 1; weekday <= 5; weekday++) {
+        hours.push({
+          weekday: weekday,
+          start_time: workStart,
+          end_time: workEnd
+        });
+      }
+
+      try {
+        const requestData = {
+          scope_type: 'company',
+          scope_id: null,
+          hours: hours
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/business-hours`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('営業時間を保存しました');
+          await loadBusinessHours();
+        } else {
+          console.error('営業時間更新エラー:', data);
+          alert('営業時間の保存に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('営業時間更新エラー:', error);
+        alert('営業時間の保存に失敗しました');
+      }
+    }
+
+    // 就業ルールを保存
+    async function saveRuleSet() {
+      const workType = document.getElementById('work-type').value;
+      const overtimeCalculation = document.getElementById('overtime-calculation').value;
+      const nightStart = document.getElementById('night-start').value;
+      const nightEnd = document.getElementById('night-end').value;
+      const roundingStart = document.getElementById('rounding-start').value;
+      const roundingEnd = document.getElementById('rounding-end').value;
+      const roundingTotal = document.getElementById('rounding-total').value;
+
+      try {
+        const requestData = {
+          name: 'デフォルト',
+          config: {
+            work_type: workType,
+            overtime_calculation: overtimeCalculation,
+            night_work_start: nightStart,
+            night_work_end: nightEnd,
+            rounding: {
+              start: roundingStart,
+              end: roundingEnd,
+              total: roundingTotal
+            }
+          }
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/rule-sets/current`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('就業ルールを保存しました');
+          await loadRuleSet();
+        } else {
+          console.error('就業ルール更新エラー:', data);
+          alert('就業ルールの保存に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('就業ルール更新エラー:', error);
+        alert('就業ルールの保存に失敗しました');
+      }
+    }
+
+    // 新規祝日モーダルを開く
+    function openNewHolidayModal() {
+      // モーダルが存在しない場合は作成
+      let modal = document.getElementById('modal-new-holiday');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-new-holiday';
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title">祝日を追加</h2>
+              <a href="#" class="modal-close">&times;</a>
+            </div>
+            <div class="modal-body">
+              <form id="form-new-holiday">
+                <div class="form-group">
+                  <label for="holiday-date" class="form-label required">日付</label>
+                  <input type="date" id="holiday-date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label for="holiday-name" class="form-label required">名称</label>
+                  <input type="text" id="holiday-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label for="holiday-type" class="form-label required">種類</label>
+                  <select id="holiday-type" class="form-select" required>
+                    <option value="holiday">祝日</option>
+                    <option value="company_holiday">会社休日</option>
+                    <option value="special">特別休日</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+              <button type="button" class="btn btn-primary" onclick="createHoliday()">追加</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'block';
+      document.getElementById('form-new-holiday').reset();
+    }
+
+    // 祝日を作成
+    async function createHoliday() {
+      const date = document.getElementById('holiday-date').value;
+      const name = document.getElementById('holiday-name').value;
+      const type = document.getElementById('holiday-type').value;
+
+      if (!date || !name) {
+        alert('日付と名称を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          scope_type: 'company',
+          scope_id: null,
+          date: date,
+          name: name,
+          type: type
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/holidays`, {
+          method: 'POST',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('祝日を追加しました');
+          document.getElementById('modal-new-holiday').style.display = 'none';
+          await loadHolidays();
+        } else {
+          console.error('祝日作成エラー:', data);
+          alert('祝日の追加に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('祝日作成エラー:', error);
+        alert('祝日の追加に失敗しました');
+      }
+    }
+
+    // 祝日編集モーダルを開く
+    async function openEditHolidayModal(holidayId) {
+      const holiday = holidays.find(h => h.id === holidayId);
+      if (!holiday) return;
+
+      // モーダルが存在しない場合は作成
+      let modal = document.getElementById('modal-edit-holiday');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-edit-holiday';
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title">祝日を編集</h2>
+              <a href="#" class="modal-close">&times;</a>
+            </div>
+            <div class="modal-body">
+              <form id="form-edit-holiday">
+                <input type="hidden" id="edit-holiday-id">
+                <div class="form-group">
+                  <label for="edit-holiday-date" class="form-label">日付</label>
+                  <input type="date" id="edit-holiday-date" class="form-input" readonly style="background-color: var(--bg-secondary);">
+                  <div class="form-help">日付は変更できません</div>
+                </div>
+                <div class="form-group">
+                  <label for="edit-holiday-name" class="form-label required">名称</label>
+                  <input type="text" id="edit-holiday-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label for="edit-holiday-type" class="form-label required">種類</label>
+                  <select id="edit-holiday-type" class="form-select" required>
+                    <option value="holiday">祝日</option>
+                    <option value="company_holiday">会社休日</option>
+                    <option value="special">特別休日</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+              <button type="button" class="btn btn-primary" onclick="updateHoliday()">保存</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      document.getElementById('edit-holiday-id').value = holiday.id;
+      document.getElementById('edit-holiday-date').value = holiday.date;
+      document.getElementById('edit-holiday-name').value = holiday.name;
+      document.getElementById('edit-holiday-type').value = holiday.type;
+      modal.style.display = 'block';
+    }
+
+    // 祝日を更新
+    async function updateHoliday() {
+      const holidayId = document.getElementById('edit-holiday-id').value;
+      const name = document.getElementById('edit-holiday-name').value;
+      const type = document.getElementById('edit-holiday-type').value;
+
+      if (!name) {
+        alert('名称を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          name: name,
+          type: type
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/holidays/${holidayId}`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('祝日を更新しました');
+          document.getElementById('modal-edit-holiday').style.display = 'none';
+          await loadHolidays();
+        } else {
+          console.error('祝日更新エラー:', data);
+          alert('祝日の更新に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('祝日更新エラー:', error);
+        alert('祝日の更新に失敗しました');
+      }
+    }
+
+    // 祝日を削除
+    async function deleteHoliday(holidayId) {
+      if (!confirm('この祝日を削除しますか？')) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/holidays/${holidayId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('祝日を削除しました');
+          await loadHolidays();
+        } else {
+          console.error('祝日削除エラー:', data);
+          alert('祝日の削除に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('祝日削除エラー:', error);
+        alert('祝日の削除に失敗しました');
+      }
+    }
+
+    // モーダルを閉じる
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal')) {
+        const modal = e.target.closest('.modal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+    });
+
+    // グローバルに公開
+    window.createHoliday = createHoliday;
+    window.updateHoliday = updateHoliday;
+    window.openEditHolidayModal = openEditHolidayModal;
+    window.deleteHoliday = deleteHoliday;
+  </script>
 </body>
 </html>
 

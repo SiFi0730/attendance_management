@@ -1,0 +1,50 @@
+# 改行コードの自動変換設定
+
+# テキストファイルは自動検出（推奨）
+* text=auto
+
+# ソースコードファイルはLFに統一
+*.php text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.xml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# 設定ファイル
+*.ini text eol=lf
+*.conf text eol=lf
+*.config text eol=lf
+
+# ドキュメント
+*.txt text eol=lf
+*.rst text eol=lf
+
+# Windows固有のファイルはCRLFを保持
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+
+# バイナリファイルは変換しない
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+
+# Composer
+composer.json text eol=lf
+composer.lock text eol=lf
+
+# Git設定ファイル
+.gitignore text eol=lf
+.gitattributes text eol=lf
+

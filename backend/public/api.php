@@ -41,6 +41,10 @@ use App\Controllers\EmployeeController;
 use App\Controllers\DepartmentController;
 use App\Controllers\PunchController;
 use App\Controllers\RequestController;
+use App\Controllers\BusinessHoursController;
+use App\Controllers\RuleSetController;
+use App\Controllers\HolidayCalendarController;
+use App\Controllers\ReportController;
 use App\Controllers\DevController;
 
 // リクエストとレスポンスのインスタンス作成
@@ -103,6 +107,64 @@ $router->put('/tenants/{id}', [TenantController::class, 'update'], [
     }
 ]);
 
+// 営業時間
+$router->get('/business-hours', [BusinessHoursController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->put('/business-hours', [BusinessHoursController::class, 'update'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// 就業ルール
+$router->get('/rule-sets/current', [RuleSetController::class, 'current'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->put('/rule-sets/current', [RuleSetController::class, 'updateCurrent'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// 祝日カレンダー
+$router->get('/holidays', [HolidayCalendarController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->post('/holidays', [HolidayCalendarController::class, 'create'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->put('/holidays/{id}', [HolidayCalendarController::class, 'update'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->delete('/holidays/{id}', [HolidayCalendarController::class, 'delete'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// レポート
+$router->get('/reports/summary', [ReportController::class, 'summary'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/reports/export/attendance', [ReportController::class, 'exportAttendance'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
 // 従業員管理
 $router->get('/employees', [EmployeeController::class, 'index'], [
     function (Request $req, Response $res) {
@@ -125,6 +187,11 @@ $router->put('/employees/{id}', [EmployeeController::class, 'update'], [
     }
 ]);
 $router->delete('/employees/{id}', [EmployeeController::class, 'delete'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->post('/employees/invite', [EmployeeController::class, 'invite'], [
     function (Request $req, Response $res) {
         return AuthMiddleware::requireAuth($req, $res);
     }

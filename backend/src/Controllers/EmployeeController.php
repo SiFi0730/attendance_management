@@ -492,5 +492,183 @@ class EmployeeController
             $response->error('INTERNAL_ERROR', '従業員の削除に失敗しました: ' . $e->getMessage(), [], 500);
         }
     }
+
+    /**
+     * 従業員招待（ユーザーアカウント作成 + 従業員プロファイル作成 + 役割割り当て）
+     * POST /employees/invite
+     */
+    public function invite(Request $request, Response $response): void
+    {
+        $tenantId = $request->getParam('tenant_id');
+        $role = $request->getParam('role');
+        $userId = $request->getParam('user_id');
+
+        // 権限チェック
+        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+            $response->error('FORBIDDEN', '従業員を招待する権限がありません', [], 403);
+            return;
+        }
+
+        $employeeCode = $request->getBody('employee_code');
+        $name = $request->getBody('name');
+        $email = $request->getBody('email');
+        $deptId = $request->getBody('dept_id');
+        $employmentType = $request->getBody('employment_type');
+        $hireDate = $request->getBody('hire_date');
+        $workLocationTz = $request->getBody('work_location_tz') ?? 'Asia/Tokyo';
+        $userRole = $request->getBody('role') ?? 'Employee'; // Employee, Manager, CompanyAdmin
+
+        // バリデーション
+        if (empty($employeeCode) || empty($name) || empty($email) || empty($employmentType) || empty($hireDate)) {
+            $response->error('VALIDATION_ERROR', '必須項目が不足しています', [], 400);
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $response->error('VALIDATION_ERROR', '有効なメールアドレスを入力してください', [], 400);
+            return;
+        }
+
+        $validRoles = ['Employee', 'Manager', 'CompanyAdmin'];
+        if (!in_array($userRole, $validRoles)) {
+            $response->error('VALIDATION_ERROR', '無効な役割です', [], 400);
+            return;
+        }
+
+        $pdo = Database::getInstance();
+
+        try {
+            $pdo->beginTransaction();
+
+            // メールアドレスの重複チェック
+            $stmt = $pdo->prepare("
+                SELECT id FROM users 
+                WHERE email = :email AND deleted_at IS NULL
+            ");
+            $stmt->execute(['email' => $email]);
+            if ($stmt->fetch()) {
+                $pdo->rollBack();
+                $response->error('CONFLICT', 'このメールアドレスは既に登録されています', [], 409);
+                return;
+            }
+
+            // 従業員コードの重複チェック
+            $stmt = $pdo->prepare("
+                SELECT id FROM employee_profiles 
+                WHERE tenant_id = :tenant_id AND employee_code = :employee_code AND deleted_at IS NULL
+            ");
+            $stmt->execute(['tenant_id' => $tenantId, 'employee_code' => $employeeCode]);
+            if ($stmt->fetch()) {
+                $pdo->rollBack();
+                $response->error('CONFLICT', 'この従業員コードは既に使用されています', [], 409);
+                return;
+            }
+
+            // 一時パスワードを生成（実際の運用ではメール送信などが必要）
+            $tempPassword = bin2hex(random_bytes(8));
+            $passwordHash = password_hash($tempPassword, PASSWORD_BCRYPT);
+
+            // ユーザー作成
+            $stmt = $pdo->prepare("
+                INSERT INTO users (email, password_hash, name, status)
+                VALUES (:email, :password_hash, :name, 'active')
+                RETURNING id
+            ");
+            $stmt->execute([
+                'email' => $email,
+                'password_hash' => $passwordHash,
+                'name' => $name,
+            ]);
+            $newUser = $stmt->fetch();
+            $newUserId = $newUser['id'];
+
+            // 従業員プロファイル作成
+            $stmt = $pdo->prepare("
+                INSERT INTO employee_profiles (
+                    tenant_id, user_id, employee_code, name, email, dept_id, 
+                    employment_type, hire_date, work_location_tz, status
+                )
+                VALUES (
+                    :tenant_id, :user_id, :employee_code, :name, :email, :dept_id,
+                    :employment_type, :hire_date, :work_location_tz, 'active'
+                )
+                RETURNING id
+            ");
+            $stmt->execute([
+                'tenant_id' => $tenantId,
+                'user_id' => $newUserId,
+                'employee_code' => $employeeCode,
+                'name' => $name,
+                'email' => $email,
+                'dept_id' => $deptId,
+                'employment_type' => $employmentType,
+                'hire_date' => $hireDate,
+                'work_location_tz' => $workLocationTz,
+            ]);
+            $employee = $stmt->fetch();
+            $employeeId = $employee['id'];
+
+            // 役割割り当て
+            $stmt = $pdo->prepare("
+                INSERT INTO role_assignments (tenant_id, user_id, role, scope_type)
+                VALUES (:tenant_id, :user_id, :role, 'all')
+            ");
+            $stmt->execute([
+                'tenant_id' => $tenantId,
+                'user_id' => $newUserId,
+                'role' => $userRole,
+            ]);
+
+            // 監査ログ
+            $stmt = $pdo->prepare("
+                INSERT INTO audit_logs (tenant_id, actor_user_id, action, entity, entity_id, after)
+                VALUES (:tenant_id, :actor_user_id, 'employee.invite', 'employee', :entity_id, :after)
+            ");
+            $stmt->execute([
+                'tenant_id' => $tenantId,
+                'actor_user_id' => $userId,
+                'entity_id' => $employeeId,
+                'after' => json_encode([
+                    'employee_code' => $employeeCode,
+                    'name' => $name,
+                    'email' => $email,
+                    'role' => $userRole,
+                ]),
+            ]);
+
+            $pdo->commit();
+
+            // 作成した従業員を取得
+            $stmt = $pdo->prepare("
+                SELECT 
+                    ep.id,
+                    ep.employee_code,
+                    ep.name,
+                    ep.email,
+                    ep.dept_id,
+                    d.name as department_name,
+                    ep.employment_type,
+                    ep.hire_date,
+                    ep.work_location_tz,
+                    ep.status,
+                    ep.user_id,
+                    ep.created_at
+                FROM employee_profiles ep
+                LEFT JOIN departments d ON ep.dept_id = d.id
+                WHERE ep.id = :id
+            ");
+            $stmt->execute(['id' => $employeeId]);
+            $createdEmployee = $stmt->fetch();
+
+            // 一時パスワードを含めて返す（実際の運用ではメール送信）
+            $createdEmployee['temp_password'] = $tempPassword;
+
+            $response->success($createdEmployee, '従業員を招待しました', 201);
+
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            $response->error('INTERNAL_ERROR', '従業員の招待に失敗しました: ' . $e->getMessage(), [], 500);
+        }
+    }
 }
 

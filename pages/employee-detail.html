@@ -196,6 +196,153 @@
       </div>
     </div>
   </main>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 従業員詳細 - API連携
+    // ============================================
+
+    let employee = null;
+    let employeeId = null;
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      // URLパラメータからIDを取得
+      const urlParams = new URLSearchParams(window.location.search);
+      employeeId = urlParams.get('id');
+      
+      if (!employeeId) {
+        alert('従業員IDが指定されていません');
+        window.location.href = 'employees.html';
+        return;
+      }
+
+      await loadEmployee();
+      setupEventListeners();
+      updateHeaderUserInfo();
+    });
+
+    // 従業員詳細を読み込み
+    async function loadEmployee() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/employees/${employeeId}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          employee = data.data;
+          renderEmployee();
+        } else {
+          console.error('従業員詳細取得エラー:', data);
+          alert('従業員情報の取得に失敗しました');
+          window.location.href = 'employees.html';
+        }
+      } catch (error) {
+        console.error('従業員詳細の読み込みエラー:', error);
+        alert('従業員情報の取得に失敗しました');
+        window.location.href = 'employees.html';
+      }
+    }
+
+    // 従業員情報を描画
+    function renderEmployee() {
+      if (!employee) return;
+
+      const employmentTypeLabels = {
+        'full_time': '正社員',
+        'part_time': 'パート',
+        'contract': '契約社員'
+      };
+
+      const statusBadges = {
+        'active': '<span class="badge badge-success">在籍</span>',
+        'on_leave': '<span class="badge badge-warning">休職中</span>',
+        'retired': '<span class="badge badge-error">退職</span>'
+      };
+
+      const hireDate = employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('ja-JP') : '-';
+      const leaveDate = employee.leave_date ? new Date(employee.leave_date).toLocaleDateString('ja-JP') : '-';
+
+      // 基本情報を更新
+      const basicInfo = document.querySelector('.card-body');
+      if (basicInfo) {
+        basicInfo.innerHTML = `
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">社員番号:</div>
+            <div>${employee.employee_code || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">氏名:</div>
+            <div>${employee.name || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">メール:</div>
+            <div>${employee.email || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">部署:</div>
+            <div>${employee.department_name || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">雇用形態:</div>
+            <div>${employmentTypeLabels[employee.employment_type] || employee.employment_type || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">雇用日:</div>
+            <div>${hireDate}</div>
+          </div>
+          ${leaveDate !== '-' ? `
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">退職日:</div>
+            <div>${leaveDate}</div>
+          </div>
+          ` : ''}
+          <div style="display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">ステータス:</div>
+            <div>${statusBadges[employee.status] || employee.status || '-'}</div>
+          </div>
+        `;
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // 編集ボタン
+      const editButton = document.querySelector('.page-actions .btn-secondary');
+      if (editButton) {
+        editButton.addEventListener('click', function() {
+          window.location.href = `employees.html?edit=${employeeId}`;
+        });
+      }
+
+      // 削除ボタン
+      const deleteButton = document.querySelector('.page-actions .btn-danger');
+      if (deleteButton) {
+        deleteButton.addEventListener('click', async function() {
+          if (!confirm('この従業員を削除しますか？この操作は取り消せません。')) {
+            return;
+          }
+
+          try {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${employeeId}`, {
+              method: 'DELETE'
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              alert('従業員を削除しました');
+              window.location.href = 'employees.html';
+            } else {
+              console.error('従業員削除エラー:', data);
+              alert('従業員の削除に失敗しました: ' + (data.error?.message || '不明なエラー'));
+            }
+          } catch (error) {
+            console.error('従業員削除エラー:', error);
+            alert('従業員の削除に失敗しました');
+          }
+        });
+      }
+    }
+  </script>
 </body>
 </html>
 

@@ -146,10 +146,11 @@
       <h1 class="page-title">従業員管理</h1>
       <p class="page-description">従業員の一覧・登録・編集を行います</p>
       <div class="page-actions">
-        <a href="employee-invite.html" class="btn btn-primary">従業員を招待</a>
+        <a href="#modal-new-employee" class="btn btn-primary">新規従業員登録</a>
+        <a href="employee-invite.html" class="btn btn-secondary">従業員を招待</a>
         <a href="departments.html" class="btn btn-secondary">部署管理</a>
         <a href="#modal-import" class="btn btn-secondary">CSVインポート</a>
-        <button class="btn btn-secondary">CSVエクスポート</button>
+        <button class="btn btn-secondary" onclick="exportCSV()">CSVエクスポート</button>
       </div>
     </div>
 
@@ -263,6 +264,206 @@
       </div>
     </div>
 
+    <!-- 新規従業員登録モーダル -->
+    <div id="modal-new-employee" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">新規従業員登録</h2>
+          <a href="#" class="modal-close">&times;</a>
+        </div>
+        <div class="modal-body">
+          <form id="form-new-employee">
+            <div class="form-group">
+              <label for="employee-code" class="form-label required">社員番号</label>
+              <input 
+                type="text" 
+                id="employee-code" 
+                name="employee-code" 
+                class="form-input" 
+                required
+                placeholder="例: EMP001"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="employee-name" class="form-label required">氏名</label>
+              <input 
+                type="text" 
+                id="employee-name" 
+                name="employee-name" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="employee-email" class="form-label required">メールアドレス</label>
+              <input 
+                type="email" 
+                id="employee-email" 
+                name="employee-email" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="employee-dept" class="form-label">部署</label>
+              <select id="employee-dept" name="employee-dept" class="form-select">
+                <option value="">選択してください</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="employee-employment-type" class="form-label required">雇用形態</label>
+              <select id="employee-employment-type" name="employee-employment-type" class="form-select" required>
+                <option value="">選択してください</option>
+                <option value="full_time">正社員</option>
+                <option value="part_time">パート</option>
+                <option value="contract">契約社員</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="employee-hire-date" class="form-label required">雇用日</label>
+              <input 
+                type="date" 
+                id="employee-hire-date" 
+                name="employee-hire-date" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="employee-work-location-tz" class="form-label">タイムゾーン</label>
+              <select id="employee-work-location-tz" name="employee-work-location-tz" class="form-select">
+                <option value="Asia/Tokyo" selected>Asia/Tokyo</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="Europe/London">Europe/London</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button type="button" class="btn btn-primary" onclick="createEmployee()">登録</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 従業員編集モーダル -->
+    <div id="modal-edit-employee" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">従業員情報編集</h2>
+          <a href="#" class="modal-close">&times;</a>
+        </div>
+        <div class="modal-body">
+          <form id="form-edit-employee">
+            <input type="hidden" id="edit-employee-id">
+            
+            <div class="form-group">
+              <label for="edit-employee-code" class="form-label">社員番号</label>
+              <input 
+                type="text" 
+                id="edit-employee-code" 
+                name="edit-employee-code" 
+                class="form-input" 
+                readonly
+                style="background-color: var(--bg-secondary);"
+              >
+              <div class="form-help">社員番号は変更できません</div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-name" class="form-label required">氏名</label>
+              <input 
+                type="text" 
+                id="edit-employee-name" 
+                name="edit-employee-name" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-email" class="form-label required">メールアドレス</label>
+              <input 
+                type="email" 
+                id="edit-employee-email" 
+                name="edit-employee-email" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-dept" class="form-label">部署</label>
+              <select id="edit-employee-dept" name="edit-employee-dept" class="form-select">
+                <option value="">選択してください</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-employment-type" class="form-label required">雇用形態</label>
+              <select id="edit-employee-employment-type" name="edit-employee-employment-type" class="form-select" required>
+                <option value="">選択してください</option>
+                <option value="full_time">正社員</option>
+                <option value="part_time">パート</option>
+                <option value="contract">契約社員</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-hire-date" class="form-label required">雇用日</label>
+              <input 
+                type="date" 
+                id="edit-employee-hire-date" 
+                name="edit-employee-hire-date" 
+                class="form-input" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-leave-date" class="form-label">退職日</label>
+              <input 
+                type="date" 
+                id="edit-employee-leave-date" 
+                name="edit-employee-leave-date" 
+                class="form-input"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-status" class="form-label required">ステータス</label>
+              <select id="edit-employee-status" name="edit-employee-status" class="form-select" required>
+                <option value="active">在籍</option>
+                <option value="on_leave">休職中</option>
+                <option value="retired">退職</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-employee-work-location-tz" class="form-label">タイムゾーン</label>
+              <select id="edit-employee-work-location-tz" name="edit-employee-work-location-tz" class="form-select">
+                <option value="Asia/Tokyo">Asia/Tokyo</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="Europe/London">Europe/London</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button type="button" class="btn btn-primary" onclick="updateEmployee()">更新</button>
+        </div>
+      </div>
+    </div>
+
     <!-- CSVインポートモーダル -->
     <div id="modal-import" class="modal">
       <div class="modal-content">
@@ -302,13 +503,626 @@
           </form>
         </div>
         <div class="modal-footer">
-          <a href="#" class="btn btn-secondary">キャンセル</a>
-          <button type="submit" class="btn btn-primary">インポート開始</button>
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button type="button" class="btn btn-primary" onclick="importCSV()">インポート開始</button>
         </div>
       </div>
     </div>
   </main>
   <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 従業員管理 - API連携
+    // ============================================
+
+    let employees = [];
+    let departments = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let filters = {
+      dept_id: '',
+      employment_type: '',
+      search: '',
+      status: ''
+    };
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Promise.all([
+        loadDepartments(),
+        loadEmployees()
+      ]);
+      setupEventListeners();
+      updateHeaderUserInfo();
+      
+      // URLパラメータから編集モーダルを開く
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+      if (editId) {
+        await openEditModal(editId);
+        // URLからパラメータを削除
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
+
+    // 部署一覧を読み込み
+    async function loadDepartments() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          departments = data.data.items || [];
+          
+          // フィルタバーの部署セレクト
+          const filterSelect = document.querySelector('.filter-bar select');
+          if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">すべて</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              filterSelect.appendChild(option);
+            });
+          }
+          
+          // 新規登録モーダルの部署セレクト
+          const newDeptSelect = document.getElementById('employee-dept');
+          if (newDeptSelect) {
+            newDeptSelect.innerHTML = '<option value="">選択してください</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              newDeptSelect.appendChild(option);
+            });
+          }
+          
+          // 編集モーダルの部署セレクト
+          const editDeptSelect = document.getElementById('edit-employee-dept');
+          if (editDeptSelect) {
+            editDeptSelect.innerHTML = '<option value="">選択してください</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              editDeptSelect.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('部署一覧の読み込みエラー:', error);
+      }
+    }
+
+    // 従業員一覧を読み込み
+    async function loadEmployees(page = 1) {
+      try {
+        let url = `${API_BASE_URL}/employees?page=${page}&limit=20`;
+        
+        if (filters.dept_id) {
+          url += `&dept_id=${filters.dept_id}`;
+        }
+        if (filters.status) {
+          url += `&status=${filters.status}`;
+        }
+        
+        const response = await apiFetch(url);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          employees = data.data.items || [];
+          currentPage = data.data.page || 1;
+          totalPages = data.data.total_pages || 1;
+          renderEmployees();
+          renderPagination();
+        } else {
+          console.error('従業員一覧取得エラー:', data);
+          alert('従業員一覧の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('従業員一覧の読み込みエラー:', error);
+        alert('従業員一覧の取得に失敗しました');
+      }
+    }
+
+    // 従業員一覧を描画
+    function renderEmployees() {
+      const tbody = document.querySelector('.table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (employees.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="8" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">従業員が登録されていません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      // 検索フィルタを適用
+      let filteredEmployees = employees;
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredEmployees = employees.filter(emp => 
+          emp.name.toLowerCase().includes(searchLower) ||
+          emp.email.toLowerCase().includes(searchLower) ||
+          emp.employee_code.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // 雇用形態フィルタを適用
+      if (filters.employment_type) {
+        const typeMap = {
+          'full': 'full_time',
+          'part': 'part_time',
+          'contract': 'contract'
+        };
+        const filterType = typeMap[filters.employment_type];
+        if (filterType) {
+          filteredEmployees = filteredEmployees.filter(emp => emp.employment_type === filterType);
+        }
+      }
+
+      filteredEmployees.forEach(employee => {
+        const row = document.createElement('tr');
+        
+        const employmentTypeLabels = {
+          'full_time': '正社員',
+          'part_time': 'パート',
+          'contract': '契約社員'
+        };
+
+        const statusBadges = {
+          'active': '<span class="badge badge-success">在籍</span>',
+          'on_leave': '<span class="badge badge-warning">休職中</span>',
+          'retired': '<span class="badge badge-error">退職</span>'
+        };
+
+        const hireDate = employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('ja-JP') : '-';
+
+        row.innerHTML = `
+          <td>${employee.employee_code || '-'}</td>
+          <td>${employee.name || '-'}</td>
+          <td>${employee.email || '-'}</td>
+          <td>${employee.department_name || '-'}</td>
+          <td>${employmentTypeLabels[employee.employment_type] || employee.employment_type || '-'}</td>
+          <td>${hireDate}</td>
+          <td>${statusBadges[employee.status] || employee.status || '-'}</td>
+          <td>
+            <a href="employee-detail.html?id=${employee.id}" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-xs);">詳細</a>
+            <button onclick="openEditModal('${employee.id}')" class="btn btn-sm btn-primary">編集</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // ページネーションを描画
+    function renderPagination() {
+      const pagination = document.querySelector('.pagination');
+      if (!pagination) return;
+
+      pagination.innerHTML = '';
+
+      // 前へボタン
+      const prevLink = document.createElement('a');
+      prevLink.href = '#';
+      prevLink.className = 'pagination-link';
+      prevLink.textContent = '«';
+      if (currentPage <= 1) {
+        prevLink.style.pointerEvents = 'none';
+        prevLink.style.opacity = '0.5';
+      } else {
+        prevLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadEmployees(currentPage - 1);
+        });
+      }
+      pagination.appendChild(prevLink);
+
+      // ページ番号
+      for (let i = 1; i <= totalPages; i++) {
+        const pageLink = document.createElement('a');
+        pageLink.href = '#';
+        pageLink.className = 'pagination-link';
+        if (i === currentPage) {
+          pageLink.classList.add('active');
+        }
+        pageLink.textContent = i;
+        pageLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadEmployees(i);
+        });
+        pagination.appendChild(pageLink);
+      }
+
+      // 次へボタン
+      const nextLink = document.createElement('a');
+      nextLink.href = '#';
+      nextLink.className = 'pagination-link';
+      nextLink.textContent = '»';
+      if (currentPage >= totalPages) {
+        nextLink.style.pointerEvents = 'none';
+        nextLink.style.opacity = '0.5';
+      } else {
+        nextLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadEmployees(currentPage + 1);
+        });
+      }
+      pagination.appendChild(nextLink);
+    }
+
+    // 新規従業員を作成
+    async function createEmployee() {
+      const employeeCode = document.getElementById('employee-code').value;
+      const name = document.getElementById('employee-name').value;
+      const email = document.getElementById('employee-email').value;
+      const deptId = document.getElementById('employee-dept').value;
+      const employmentType = document.getElementById('employee-employment-type').value;
+      const hireDate = document.getElementById('employee-hire-date').value;
+      const workLocationTz = document.getElementById('employee-work-location-tz').value;
+
+      if (!employeeCode || !name || !email || !employmentType || !hireDate) {
+        alert('すべての必須項目を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          employee_code: employeeCode,
+          name: name,
+          email: email,
+          dept_id: deptId || null,
+          employment_type: employmentType,
+          hire_date: hireDate,
+          work_location_tz: workLocationTz
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/employees`, {
+          method: 'POST',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('従業員を登録しました');
+          document.getElementById('modal-new-employee').style.display = 'none';
+          document.getElementById('form-new-employee').reset();
+          await loadEmployees(1);
+        } else {
+          console.error('従業員登録エラー:', data);
+          alert('従業員の登録に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('従業員登録エラー:', error);
+        alert('従業員の登録に失敗しました');
+      }
+    }
+
+    // 従業員を更新
+    async function updateEmployee() {
+      const employeeId = document.getElementById('edit-employee-id').value;
+      const name = document.getElementById('edit-employee-name').value;
+      const email = document.getElementById('edit-employee-email').value;
+      const deptId = document.getElementById('edit-employee-dept').value;
+      const employmentType = document.getElementById('edit-employee-employment-type').value;
+      const hireDate = document.getElementById('edit-employee-hire-date').value;
+      const leaveDate = document.getElementById('edit-employee-leave-date').value;
+      const status = document.getElementById('edit-employee-status').value;
+      const workLocationTz = document.getElementById('edit-employee-work-location-tz').value;
+
+      if (!name || !email || !employmentType || !hireDate || !status) {
+        alert('すべての必須項目を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          name: name,
+          email: email,
+          dept_id: deptId || null,
+          employment_type: employmentType,
+          hire_date: hireDate,
+          leave_date: leaveDate || null,
+          status: status,
+          work_location_tz: workLocationTz
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/employees/${employeeId}`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('従業員情報を更新しました');
+          document.getElementById('modal-edit-employee').style.display = 'none';
+          await loadEmployees(currentPage);
+        } else {
+          console.error('従業員更新エラー:', data);
+          alert('従業員情報の更新に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('従業員更新エラー:', error);
+        alert('従業員情報の更新に失敗しました');
+      }
+    }
+
+    // 編集モーダルを開く
+    async function openEditModal(employeeId) {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/employees/${employeeId}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          const emp = data.data;
+          
+          document.getElementById('edit-employee-id').value = emp.id;
+          document.getElementById('edit-employee-code').value = emp.employee_code || '';
+          document.getElementById('edit-employee-name').value = emp.name || '';
+          document.getElementById('edit-employee-email').value = emp.email || '';
+          document.getElementById('edit-employee-dept').value = emp.dept_id || '';
+          document.getElementById('edit-employee-employment-type').value = emp.employment_type || '';
+          document.getElementById('edit-employee-hire-date').value = emp.hire_date || '';
+          document.getElementById('edit-employee-leave-date').value = emp.leave_date || '';
+          document.getElementById('edit-employee-status').value = emp.status || 'active';
+          document.getElementById('edit-employee-work-location-tz').value = emp.work_location_tz || 'Asia/Tokyo';
+          
+          document.getElementById('modal-edit-employee').style.display = 'block';
+        } else {
+          console.error('従業員詳細取得エラー:', data);
+          alert('従業員情報の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('従業員詳細の読み込みエラー:', error);
+        alert('従業員情報の取得に失敗しました');
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // フィルタ適用ボタン
+      const filterButton = document.querySelector('.filter-bar button');
+      if (filterButton) {
+        filterButton.addEventListener('click', function() {
+          const deptSelect = document.querySelector('.filter-bar select');
+          const employmentSelect = document.querySelectorAll('.filter-bar select')[1];
+          const searchInput = document.querySelector('.filter-bar input[type="text"]');
+          
+          filters.dept_id = deptSelect ? deptSelect.value : '';
+          filters.employment_type = employmentSelect ? employmentSelect.value : '';
+          filters.search = searchInput ? searchInput.value : '';
+          
+          loadEmployees(1);
+        });
+      }
+
+      // 新規従業員登録モーダルを開く
+      const newEmployeeLink = document.querySelector('a[href="#modal-new-employee"]');
+      if (newEmployeeLink) {
+        newEmployeeLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          const modal = document.getElementById('modal-new-employee');
+          if (modal) {
+            modal.style.display = 'block';
+            // 雇用日を今日の日付に設定
+            const hireDateInput = document.getElementById('employee-hire-date');
+            if (hireDateInput && !hireDateInput.value) {
+              const today = new Date();
+              hireDateInput.value = today.toISOString().split('T')[0];
+            }
+          }
+        });
+      }
+
+      // モーダルを閉じる
+      document.querySelectorAll('.modal-close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const modal = this.closest('.modal');
+          if (modal) {
+            modal.style.display = 'none';
+          }
+        });
+      });
+
+      // モーダル外クリックで閉じる
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // CSVインポート
+    async function importCSV() {
+      const fileInput = document.getElementById('csv-file');
+      const skipDuplicates = document.querySelector('input[name="skip-duplicates"]').checked;
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('CSVファイルを選択してください');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const text = await file.text();
+      
+      // CSVをパース
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length < 2) {
+        alert('CSVファイルが空か、ヘッダーのみです');
+        return;
+      }
+
+      // ヘッダーを取得
+      const headers = lines[0].split(',').map(h => h.trim());
+      const requiredHeaders = ['employee_code', 'name', 'email', 'employment_type', 'hire_date'];
+      
+      for (const header of requiredHeaders) {
+        if (!headers.includes(header)) {
+          alert(`必須ヘッダー "${header}" が見つかりません`);
+          return;
+        }
+      }
+
+      // データ行を処理
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: []
+      };
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+
+        try {
+          // 雇用形態の変換
+          const employmentTypeMap = {
+            'full_time': 'full_time',
+            'part_time': 'part_time',
+            'contract': 'contract',
+            'full': 'full_time',
+            'part': 'part_time'
+          };
+          const employmentType = employmentTypeMap[row.employment_type] || row.employment_type;
+
+          // 部署コードから部署IDを取得
+          let deptId = null;
+          if (row.dept_code) {
+            const dept = departments.find(d => d.code === row.dept_code);
+            if (dept) {
+              deptId = dept.id;
+            }
+          }
+
+          const requestData = {
+            employee_code: row.employee_code,
+            name: row.name,
+            email: row.email,
+            dept_id: deptId,
+            employment_type: employmentType,
+            hire_date: row.hire_date,
+            work_location_tz: row.work_location_tz || 'Asia/Tokyo'
+          };
+
+          const response = await apiFetch(`${API_BASE_URL}/employees`, {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            results.success++;
+          } else {
+            if (skipDuplicates && data.error?.code === 'CONFLICT') {
+              // 重複をスキップ
+              results.success++;
+            } else {
+              results.failed++;
+              results.errors.push(`行 ${i + 1}: ${data.error?.message || 'エラー'}`);
+            }
+          }
+        } catch (error) {
+          results.failed++;
+          results.errors.push(`行 ${i + 1}: ${error.message}`);
+        }
+      }
+
+      // 結果を表示
+      let message = `インポート完了\n成功: ${results.success}件\n失敗: ${results.failed}件`;
+      if (results.errors.length > 0 && results.errors.length <= 10) {
+        message += '\n\nエラー詳細:\n' + results.errors.join('\n');
+      } else if (results.errors.length > 10) {
+        message += `\n\n（エラーが${results.errors.length}件あります）`;
+      }
+      alert(message);
+
+      if (results.success > 0) {
+        document.getElementById('modal-import').style.display = 'none';
+        fileInput.value = '';
+        await loadEmployees(1);
+      }
+    }
+
+    // CSVエクスポート
+    async function exportCSV() {
+      try {
+        // 全従業員を取得
+        const response = await apiFetch(`${API_BASE_URL}/employees?limit=10000`);
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          alert('従業員データの取得に失敗しました');
+          return;
+        }
+
+        const employees = data.data.items || [];
+        
+        if (employees.length === 0) {
+          alert('エクスポートするデータがありません');
+          return;
+        }
+
+        // CSVヘッダー
+        const headers = ['employee_code', 'name', 'email', 'dept_code', 'employment_type', 'hire_date', 'leave_date', 'work_location_tz', 'status'];
+        
+        // CSVデータ行
+        const rows = employees.map(emp => {
+          const dept = departments.find(d => d.id === emp.dept_id);
+          return [
+            emp.employee_code || '',
+            emp.name || '',
+            emp.email || '',
+            dept ? (dept.code || '') : '',
+            emp.employment_type || '',
+            emp.hire_date || '',
+            emp.leave_date || '',
+            emp.work_location_tz || 'Asia/Tokyo',
+            emp.status || 'active'
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+        });
+
+        // CSV文字列を生成
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        
+        // BOMを追加（Excelで文字化けを防ぐ）
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // ダウンロード
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('CSVエクスポートエラー:', error);
+        alert('CSVエクスポートに失敗しました');
+      }
+    }
+
+    // グローバルに公開
+    window.createEmployee = createEmployee;
+    window.updateEmployee = updateEmployee;
+    window.openEditModal = openEditModal;
+    window.importCSV = importCSV;
+    window.exportCSV = exportCSV;
+  </script>
 </body>
 </html>
 

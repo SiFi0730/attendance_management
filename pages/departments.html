@@ -212,8 +212,8 @@
           </form>
         </div>
         <div class="modal-footer">
-          <a href="#" class="btn btn-secondary">キャンセル</a>
-          <button type="submit" class="btn btn-primary">追加</button>
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button type="button" class="btn btn-primary" onclick="createDepartment()">追加</button>
         </div>
       </div>
     </div>
@@ -227,6 +227,7 @@
         </div>
         <div class="modal-body">
           <form>
+            <input type="hidden" id="edit-department-id">
             <div class="form-group">
               <label for="dept-name-edit" class="form-label required">部署名</label>
               <input 
@@ -234,7 +235,6 @@
                 id="dept-name-edit" 
                 name="dept-name-edit" 
                 class="form-input" 
-                value="営業部"
                 required
               >
             </div>
@@ -243,20 +243,282 @@
               <label for="parent-dept-edit" class="form-label">親部署</label>
               <select id="parent-dept-edit" name="parent-dept-edit" class="form-select">
                 <option value="">なし（トップレベル）</option>
-                <option value="sales" selected>営業部</option>
-                <option value="dev">開発部</option>
-                <option value="hr">人事部</option>
               </select>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <a href="#" class="btn btn-secondary">キャンセル</a>
-          <button type="submit" class="btn btn-primary">保存</button>
+          <a href="#" class="btn btn-secondary modal-close">キャンセル</a>
+          <button type="button" class="btn btn-primary" onclick="updateDepartment()">保存</button>
         </div>
       </div>
     </div>
   </main>
+  <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 部署管理 - API連携
+    // ============================================
+
+    let departments = [];
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadDepartments();
+      setupEventListeners();
+      updateHeaderUserInfo();
+    });
+
+    // 部署一覧を読み込み
+    async function loadDepartments() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          departments = data.data.items || data.data || [];
+          renderDepartments();
+          populateParentSelects();
+        } else {
+          console.error('部署一覧取得エラー:', data);
+          alert('部署一覧の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('部署一覧の読み込みエラー:', error);
+        alert('部署一覧の取得に失敗しました');
+      }
+    }
+
+    // 部署一覧を描画
+    function renderDepartments() {
+      const tbody = document.querySelector('.table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (departments.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">部署が登録されていません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      // 親部署名を取得するマップを作成
+      const deptMap = {};
+      departments.forEach(dept => {
+        deptMap[dept.id] = dept;
+      });
+
+      departments.forEach(dept => {
+        const row = document.createElement('tr');
+        const parentName = dept.parent_id && deptMap[dept.parent_id] ? deptMap[dept.parent_id].name : '-';
+        const createdDate = dept.created_at ? new Date(dept.created_at).toLocaleDateString('ja-JP') : '-';
+
+        row.innerHTML = `
+          <td>${dept.name || '-'}</td>
+          <td>${parentName}</td>
+          <td>-</td>
+          <td>${createdDate}</td>
+          <td>
+            <button onclick="openEditModal('${dept.id}')" class="btn btn-sm btn-secondary" style="margin-right: var(--spacing-xs);">編集</button>
+            <button onclick="deleteDepartment('${dept.id}')" class="btn btn-sm btn-danger">削除</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // 親部署セレクトを設定
+    function populateParentSelects() {
+      const newSelect = document.getElementById('parent-dept');
+      const editSelect = document.getElementById('parent-dept-edit');
+      
+      [newSelect, editSelect].forEach(select => {
+        if (select) {
+          const currentValue = select.value;
+          select.innerHTML = '<option value="">なし（トップレベル）</option>';
+          departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept.id;
+            option.textContent = dept.name;
+            select.appendChild(option);
+          });
+          if (currentValue) {
+            select.value = currentValue;
+          }
+        }
+      });
+    }
+
+    // 新規部署を作成
+    async function createDepartment() {
+      const name = document.getElementById('dept-name').value;
+      const parentId = document.getElementById('parent-dept').value;
+
+      if (!name) {
+        alert('部署名を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          name: name,
+          parent_id: parentId || null
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/departments`, {
+          method: 'POST',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('部署を作成しました');
+          document.getElementById('modal-new-department').style.display = 'none';
+          document.querySelector('#modal-new-department form').reset();
+          await loadDepartments();
+        } else {
+          console.error('部署作成エラー:', data);
+          alert('部署の作成に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('部署作成エラー:', error);
+        alert('部署の作成に失敗しました');
+      }
+    }
+
+    // 編集モーダルを開く
+    async function openEditModal(departmentId) {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments/${departmentId}`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          const dept = data.data;
+          
+          document.getElementById('dept-name-edit').value = dept.name || '';
+          document.getElementById('parent-dept-edit').value = dept.parent_id || '';
+          document.getElementById('edit-department-id').value = dept.id;
+          
+          // 親部署セレクトを更新
+          populateParentSelects();
+          document.getElementById('parent-dept-edit').value = dept.parent_id || '';
+          
+          document.getElementById('modal-edit-department').style.display = 'block';
+        } else {
+          console.error('部署詳細取得エラー:', data);
+          alert('部署情報の取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('部署詳細の読み込みエラー:', error);
+        alert('部署情報の取得に失敗しました');
+      }
+    }
+
+    // 部署を更新
+    async function updateDepartment() {
+      const departmentId = document.getElementById('edit-department-id').value;
+      const name = document.getElementById('dept-name-edit').value;
+      const parentId = document.getElementById('parent-dept-edit').value;
+
+      if (!name) {
+        alert('部署名を入力してください');
+        return;
+      }
+
+      try {
+        const requestData = {
+          name: name,
+          parent_id: parentId || null
+        };
+
+        const response = await apiFetch(`${API_BASE_URL}/departments/${departmentId}`, {
+          method: 'PUT',
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('部署を更新しました');
+          document.getElementById('modal-edit-department').style.display = 'none';
+          await loadDepartments();
+        } else {
+          console.error('部署更新エラー:', data);
+          alert('部署の更新に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('部署更新エラー:', error);
+        alert('部署の更新に失敗しました');
+      }
+    }
+
+    // 部署を削除
+    async function deleteDepartment(departmentId) {
+      if (!confirm('この部署を削除しますか？この操作は取り消せません。')) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments/${departmentId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert('部署を削除しました');
+          await loadDepartments();
+        } else {
+          console.error('部署削除エラー:', data);
+          alert('部署の削除に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('部署削除エラー:', error);
+        alert('部署の削除に失敗しました');
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // 新規部署追加モーダルを開く
+      const newDeptLink = document.querySelector('a[href="#modal-new-department"]');
+      if (newDeptLink) {
+        newDeptLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          document.getElementById('modal-new-department').style.display = 'block';
+        });
+      }
+
+      // モーダルを閉じる
+      document.querySelectorAll('.modal-close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const modal = this.closest('.modal');
+          if (modal) {
+            modal.style.display = 'none';
+          }
+        });
+      });
+
+      // モーダル外クリックで閉じる
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // グローバルに公開
+    window.createDepartment = createDepartment;
+    window.updateDepartment = updateDepartment;
+    window.openEditModal = openEditModal;
+    window.deleteDepartment = deleteDepartment;
+  </script>
 </body>
 </html>
 

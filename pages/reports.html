@@ -165,37 +165,9 @@
             </thead>
             <tbody>
               <tr>
-                <td>山田太郎</td>
-                <td>営業部</td>
-                <td>162.5h</td>
-                <td>160.0h</td>
-                <td>2.5h</td>
-                <td>0.0h</td>
-                <td>0.0h</td>
-                <td>1回</td>
-                <td>0回</td>
-              </tr>
-              <tr>
-                <td>佐藤花子</td>
-                <td>開発部</td>
-                <td>175.0h</td>
-                <td>160.0h</td>
-                <td>15.0h</td>
-                <td>2.0h</td>
-                <td>0.0h</td>
-                <td>0回</td>
-                <td>0回</td>
-              </tr>
-              <tr>
-                <td>鈴木一郎</td>
-                <td>人事部</td>
-                <td>155.0h</td>
-                <td>160.0h</td>
-                <td>0.0h</td>
-                <td>0.0h</td>
-                <td>0.0h</td>
-                <td>0回</td>
-                <td>2回</td>
+                <td colspan="9" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">
+                  集計を実行してください
+                </td>
               </tr>
             </tbody>
           </table>
@@ -359,33 +331,8 @@
             </thead>
             <tbody>
               <tr>
-                <td>JOB001</td>
-                <td>CSVエクスポート（勤怠明細）</td>
-                <td><span class="badge badge-success">完了</span></td>
-                <td>2025-01-15 10:00</td>
-                <td>2025-01-15 10:05</td>
-                <td>
-                  <button class="btn btn-sm btn-secondary">ダウンロード</button>
-                </td>
-              </tr>
-              <tr>
-                <td>JOB002</td>
-                <td>CSVインポート（従業員）</td>
-                <td><span class="badge badge-success">完了</span></td>
-                <td>2025-01-14 14:00</td>
-                <td>2025-01-14 14:02</td>
-                <td>
-                  <button class="btn btn-sm btn-secondary">結果確認</button>
-                </td>
-              </tr>
-              <tr>
-                <td>JOB003</td>
-                <td>CSVエクスポート（集計結果）</td>
-                <td><span class="badge badge-warning">処理中</span></td>
-                <td>2025-01-15 11:00</td>
-                <td>-</td>
-                <td>
-                  <span class="loading"></span>
+                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">
+                  ジョブ履歴はありません
                 </td>
               </tr>
             </tbody>
@@ -395,9 +342,144 @@
     </div>
   </main>
 
+  <script src="../scripts/common.js"></script>
   <script>
-    // エクスポート種類に応じてヘルプを表示
-    document.addEventListener('DOMContentLoaded', function() {
+    // ============================================
+    // レポート - API連携
+    // ============================================
+
+    let departments = [];
+    let employees = [];
+    let summaryData = [];
+    let currentTab = 'summary';
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Promise.all([
+        loadDepartments(),
+        loadEmployees()
+      ]);
+      setupEventListeners();
+      updateHeaderUserInfo();
+      
+      // 日付フィルタの初期値を設定（今月の初日と末日）
+      const today = getCurrentTime();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      const startDateInput = document.getElementById('summary-start-date');
+      const endDateInput = document.getElementById('summary-end-date');
+      if (startDateInput) {
+        startDateInput.value = formatDate(firstDay);
+      }
+      if (endDateInput) {
+        endDateInput.value = formatDate(lastDay);
+      }
+    });
+
+    // 部署一覧を読み込み
+    async function loadDepartments() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/departments`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          departments = data.data.items || data.data || [];
+          
+          // 集計タブの部署セレクト
+          const summaryDeptSelect = document.querySelector('#tab-summary .filter-bar select');
+          if (summaryDeptSelect) {
+            summaryDeptSelect.innerHTML = '<option value="">すべて</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              summaryDeptSelect.appendChild(option);
+            });
+          }
+          
+          // エクスポートタブの部署セレクト
+          const exportDeptSelect = document.getElementById('export-department');
+          if (exportDeptSelect) {
+            exportDeptSelect.innerHTML = '<option value="">すべて</option>';
+            departments.forEach(dept => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              exportDeptSelect.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('部署一覧の読み込みエラー:', error);
+      }
+    }
+
+    // 従業員一覧を読み込み
+    async function loadEmployees() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/employees?limit=1000`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          employees = data.data.items || [];
+        }
+      } catch (error) {
+        console.error('従業員一覧の読み込みエラー:', error);
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // タブ切り替え
+      document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tab = this.getAttribute('href');
+          if (tab.startsWith('#')) {
+            currentTab = tab.substring(1).replace('tab-', '');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+              content.style.display = 'none';
+            });
+            const targetTab = document.getElementById(tab.substring(1));
+            if (targetTab) {
+              targetTab.style.display = 'block';
+            }
+            
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+          }
+        });
+      });
+
+      // 集計実行ボタン
+      const summaryButton = document.querySelector('#tab-summary .filter-bar button');
+      if (summaryButton) {
+        summaryButton.addEventListener('click', async function() {
+          await loadSummary();
+        });
+      }
+
+      // エクスポートフォーム
+      const exportForm = document.querySelector('#tab-export form');
+      if (exportForm) {
+        exportForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await exportCSV();
+        });
+      }
+
+      // インポートフォーム
+      const importForm = document.querySelector('#tab-import form');
+      if (importForm) {
+        importForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await importCSV();
+        });
+      }
+
+      // エクスポート種類に応じてヘルプを表示
       const exportTypeSelect = document.getElementById('export-type');
       const exportHelp = document.getElementById('export-help');
 
@@ -434,9 +516,354 @@
           }
         });
       }
-    });
+    }
+
+    // 集計レポートを読み込み
+    async function loadSummary() {
+      const periodType = document.querySelector('#tab-summary .filter-bar select').value;
+      const startDate = document.getElementById('summary-start-date').value;
+      const endDate = document.getElementById('summary-end-date').value;
+      const deptId = document.querySelectorAll('#tab-summary .filter-bar select')[1].value;
+
+      if (!startDate || !endDate) {
+        alert('開始日と終了日を入力してください');
+        return;
+      }
+
+      try {
+        let url = `${API_BASE_URL}/reports/summary?period_type=${periodType}&start_date=${startDate}&end_date=${endDate}`;
+        if (deptId) {
+          url += `&dept_id=${deptId}`;
+        }
+
+        const response = await apiFetch(url);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          summaryData = data.data || [];
+          renderSummary();
+        } else {
+          console.error('集計レポート取得エラー:', data);
+          alert('集計レポートの取得に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('集計レポートの読み込みエラー:', error);
+        alert('集計レポートの取得に失敗しました');
+      }
+    }
+
+    // 集計結果を描画
+    function renderSummary() {
+      const tbody = document.querySelector('#tab-summary .table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (summaryData.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="9" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">データがありません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      summaryData.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.employee_name || '-'}</td>
+          <td>${item.department_name || '-'}</td>
+          <td>${item.work_hours || 0}h</td>
+          <td>${item.scheduled_hours || 0}h</td>
+          <td>${item.overtime_hours || 0}h</td>
+          <td>${item.night_work_hours || 0}h</td>
+          <td>${item.holiday_work_hours || 0}h</td>
+          <td>${item.late_count || 0}回</td>
+          <td>${item.early_leave_count || 0}回</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // CSVエクスポート
+    async function exportCSV() {
+      const exportType = document.getElementById('export-type').value;
+      const startDate = document.getElementById('export-period-start').value;
+      const endDate = document.getElementById('export-period-end').value;
+      const deptId = document.getElementById('export-department').value;
+
+      if (!exportType) {
+        alert('エクスポート種類を選択してください');
+        return;
+      }
+
+      try {
+        let csvContent = '';
+        let filename = '';
+
+        if (exportType === 'employees') {
+          // 従業員一覧エクスポート
+          const headers = ['employee_code', 'name', 'email', 'dept_code', 'employment_type', 'hire_date', 'status'];
+          csvContent = headers.join(',') + '\n';
+          
+          let filteredEmployees = employees;
+          if (deptId) {
+            filteredEmployees = employees.filter(emp => emp.dept_id === deptId);
+          }
+
+          filteredEmployees.forEach(emp => {
+            const dept = departments.find(d => d.id === emp.dept_id);
+            const row = [
+              emp.employee_code || '',
+              emp.name || '',
+              emp.email || '',
+              dept ? (dept.code || '') : '',
+              emp.employment_type || '',
+              emp.hire_date || '',
+              emp.status || ''
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+            csvContent += row + '\n';
+          });
+
+          filename = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+
+        } else if (exportType === 'attendance') {
+          // 勤怠明細エクスポート
+          if (!startDate || !endDate) {
+            alert('開始日と終了日を入力してください');
+            return;
+          }
+
+          let url = `${API_BASE_URL}/reports/export/attendance?start_date=${startDate}&end_date=${endDate}`;
+          if (deptId) {
+            url += `&dept_id=${deptId}`;
+          }
+
+          const response = await apiFetch(url);
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            alert('勤怠明細の取得に失敗しました');
+            return;
+          }
+
+          const records = data.data || [];
+          const headers = ['employee_code', 'date', 'clock_in', 'clock_out', 'break_minutes', 'work_minutes', 'overtime_minutes', 'late', 'early_leave'];
+          csvContent = headers.join(',') + '\n';
+
+          records.forEach(record => {
+            const row = [
+              record.employee_code || '',
+              record.date || '',
+              record.clock_in || '',
+              record.clock_out || '',
+              record.break_minutes || 0,
+              record.work_minutes || 0,
+              record.overtime_minutes || 0,
+              record.late || 0,
+              record.early_leave || 0
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+            csvContent += row + '\n';
+          });
+
+          filename = `attendance_${startDate}_${endDate}.csv`;
+
+        } else if (exportType === 'summary') {
+          // 集計結果エクスポート
+          if (!startDate || !endDate) {
+            alert('開始日と終了日を入力してください');
+            return;
+          }
+
+          await loadSummary();
+          
+          const headers = ['employee_code', 'employee_name', 'department_name', 'work_hours', 'scheduled_hours', 'overtime_hours', 'night_work_hours', 'holiday_work_hours', 'late_count', 'early_leave_count'];
+          csvContent = headers.join(',') + '\n';
+
+          summaryData.forEach(item => {
+            const row = [
+              item.employee_code || '',
+              item.employee_name || '',
+              item.department_name || '',
+              item.work_hours || 0,
+              item.scheduled_hours || 0,
+              item.overtime_hours || 0,
+              item.night_work_hours || 0,
+              item.holiday_work_hours || 0,
+              item.late_count || 0,
+              item.early_leave_count || 0
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+            csvContent += row + '\n';
+          });
+
+          filename = `summary_${startDate}_${endDate}.csv`;
+
+        } else if (exportType === 'punches') {
+          // 打刻原票エクスポート
+          if (!startDate || !endDate) {
+            alert('開始日と終了日を入力してください');
+            return;
+          }
+
+          let url = `${API_BASE_URL}/punches?from=${startDate} 00:00:00&to=${endDate} 23:59:59&limit=10000`;
+          const response = await apiFetch(url);
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            alert('打刻データの取得に失敗しました');
+            return;
+          }
+
+          const punches = data.data.items || [];
+          const headers = ['employee_code', 'type', 'occurred_at', 'source', 'device', 'note'];
+          csvContent = headers.join(',') + '\n';
+
+          punches.forEach(punch => {
+            const employee = employees.find(e => e.id === punch.employee_id);
+            const row = [
+              employee ? employee.employee_code : '',
+              punch.type || '',
+              punch.occurred_at || '',
+              punch.source || '',
+              punch.device || '',
+              punch.note || ''
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+            csvContent += row + '\n';
+          });
+
+          filename = `punches_${startDate}_${endDate}.csv`;
+        }
+
+        // CSVダウンロード
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert('エクスポートが完了しました');
+
+      } catch (error) {
+        console.error('CSVエクスポートエラー:', error);
+        alert('CSVエクスポートに失敗しました');
+      }
+    }
+
+    // CSVインポート（打刻）
+    async function importCSV() {
+      const importType = document.getElementById('import-type').value;
+      const fileInput = document.getElementById('import-file');
+      const skipDuplicates = document.querySelector('input[name="skip-duplicate-punches"]')?.checked || false;
+
+      if (!importType) {
+        alert('インポート種類を選択してください');
+        return;
+      }
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('CSVファイルを選択してください');
+        return;
+      }
+
+      if (importType === 'employees') {
+        // 従業員インポートは既にemployees.htmlで実装済み
+        alert('従業員インポートは従業員管理ページから実行してください');
+        return;
+      }
+
+      if (importType === 'punches') {
+        // 打刻インポート
+        const file = fileInput.files[0];
+        const text = await file.text();
+        
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          alert('CSVファイルが空か、ヘッダーのみです');
+          return;
+        }
+
+        // ヘッダーを取得
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const requiredHeaders = ['employee_code', 'type', 'occurred_at', 'source'];
+        
+        for (const header of requiredHeaders) {
+          if (!headers.includes(header)) {
+            alert(`必須ヘッダー "${header}" が見つかりません`);
+            return;
+          }
+        }
+
+        const results = {
+          success: 0,
+          failed: 0,
+          errors: []
+        };
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+
+          try {
+            // 従業員コードから従業員IDを取得
+            const employee = employees.find(e => e.employee_code === row.employee_code);
+            if (!employee) {
+              results.failed++;
+              results.errors.push(`行 ${i + 1}: 従業員コード "${row.employee_code}" が見つかりません`);
+              continue;
+            }
+
+            const requestData = {
+              type: row.type,
+              occurred_at: row.occurred_at,
+              source: row.source || 'csv_import',
+              device: row.device || null,
+              note: row.note || null
+            };
+
+            const response = await apiFetch(`${API_BASE_URL}/punches`, {
+              method: 'POST',
+              body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              results.success++;
+            } else {
+              if (skipDuplicates && data.error?.code === 'CONFLICT') {
+                results.success++;
+              } else {
+                results.failed++;
+                results.errors.push(`行 ${i + 1}: ${data.error?.message || 'エラー'}`);
+              }
+            }
+          } catch (error) {
+            results.failed++;
+            results.errors.push(`行 ${i + 1}: ${error.message}`);
+          }
+        }
+
+        // 結果を表示
+        let message = `インポート完了\n成功: ${results.success}件\n失敗: ${results.failed}件`;
+        if (results.errors.length > 0 && results.errors.length <= 10) {
+          message += '\n\nエラー詳細:\n' + results.errors.join('\n');
+        } else if (results.errors.length > 10) {
+          message += `\n\n（エラーが${results.errors.length}件あります）`;
+        }
+        alert(message);
+
+        if (results.success > 0) {
+          fileInput.value = '';
+        }
+      }
+    }
   </script>
-  <script src="../scripts/common.js"></script>
 </body>
 </html>
 
