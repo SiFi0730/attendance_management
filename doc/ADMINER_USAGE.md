@@ -1,5 +1,43 @@
 # Adminer 使用方法ガイド
 
+## 🚀 5分で始めるAdminer
+
+### ステップ1: アクセス
+
+ブラウザで以下にアクセス:
+```
+http://localhost:8080/adminer-login.php
+```
+
+### ステップ2: ログイン
+
+「Adminerを開く」ボタンをクリック
+
+または、直接以下にアクセスしてログイン情報を入力:
+```
+http://localhost:8080/adminer.php
+```
+
+**ログイン情報:**
+- システム: **PostgreSQL**
+- サーバー: `localhost:5432`
+- ユーザー名: `attendance_user`
+- パスワード: `attendance_password`
+- データベース: `attendance_management`
+
+### ステップ3: データベースを選択
+
+左側のメニューから **attendance_management** をクリック
+
+### ステップ4: テーブルを確認
+
+20個のテーブルが表示されます。例えば:
+- `users` - ユーザー一覧を確認
+- `tenants` - テナント（企業）一覧を確認
+- `employee_profiles` - 従業員一覧を確認
+
+---
+
 ## 📋 目次
 
 1. [初回アクセス](#初回アクセス)
@@ -252,6 +290,62 @@ echo password_hash('your_password', PASSWORD_BCRYPT);
 3. 上部の「エクスポート」リンクをクリック
 4. フォーマットを選択（CSV、SQL、JSON等）
 5. 「実行」をクリック
+
+---
+
+## 🔍 便利なSQLクエリ集
+
+### 全テーブルのレコード数を確認
+```sql
+SELECT 
+    schemaname,
+    tablename,
+    n_tup_ins as inserts,
+    n_tup_upd as updates,
+    n_tup_del as deletes,
+    n_live_tup as live_rows
+FROM pg_stat_user_tables
+ORDER BY tablename;
+```
+
+### ユーザーと従業員の紐付けを確認
+```sql
+SELECT 
+    u.email,
+    u.name as user_name,
+    ep.employee_code,
+    ep.name as employee_name,
+    d.name as department
+FROM users u
+LEFT JOIN employee_profiles ep ON u.id = ep.user_id
+LEFT JOIN departments d ON ep.dept_id = d.id
+WHERE u.deleted_at IS NULL;
+```
+
+### 今日の打刻記録を確認
+```sql
+SELECT 
+    pr.type,
+    pr.occurred_at,
+    ep.name as employee_name,
+    d.name as department
+FROM punch_records pr
+JOIN employee_profiles ep ON pr.employee_id = ep.id
+LEFT JOIN departments d ON ep.dept_id = d.id
+WHERE DATE(pr.occurred_at) = CURRENT_DATE
+ORDER BY pr.occurred_at DESC;
+```
+
+### テナントごとの従業員数を確認
+```sql
+SELECT 
+    t.name as tenant_name,
+    COUNT(ep.id) as employee_count
+FROM tenants t
+LEFT JOIN employee_profiles ep ON t.id = ep.tenant_id AND ep.deleted_at IS NULL
+WHERE t.deleted_at IS NULL
+GROUP BY t.id, t.name;
+```
 
 ---
 
