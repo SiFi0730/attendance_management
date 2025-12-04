@@ -46,6 +46,7 @@ use App\Controllers\RuleSetController;
 use App\Controllers\HolidayCalendarController;
 use App\Controllers\ReportController;
 use App\Controllers\PayslipController;
+use App\Controllers\AuditLogController;
 use App\Controllers\DevController;
 
 // リクエストとレスポンスのインスタンス作成
@@ -173,6 +174,18 @@ $router->get('/payslips', [PayslipController::class, 'index'], [
     }
 ]);
 $router->get('/payslips/{employee_id}/{period}', [PayslipController::class, 'show'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// 監査ログ
+$router->get('/audit-logs', [AuditLogController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/audit-logs/{id}', [AuditLogController::class, 'show'], [
     function (Request $req, Response $res) {
         return AuthMiddleware::requireAuth($req, $res);
     }

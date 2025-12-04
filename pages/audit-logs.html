@@ -98,7 +98,7 @@
       <h1 class="page-title">監査ログ</h1>
       <p class="page-description">システム内の重要な操作履歴を確認できます</p>
       <div class="page-actions">
-        <button class="btn btn-secondary">エクスポート</button>
+        <button class="btn btn-secondary" onclick="exportAuditLogs()">エクスポート</button>
       </div>
     </div>
 
@@ -106,39 +106,40 @@
     <div class="filter-bar">
       <div class="filter-group">
         <label class="filter-label">操作種別:</label>
-        <select class="form-select filter-input">
+        <select id="filter-action" class="form-select filter-input">
           <option value="">すべて</option>
           <option value="create">作成</option>
           <option value="update">更新</option>
           <option value="delete">削除</option>
           <option value="approve">承認</option>
-          <option value="export">エクスポート</option>
+          <option value="reject">差戻し</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label">エンティティ:</label>
-        <select class="form-select filter-input">
+        <select id="filter-entity" class="form-select filter-input">
           <option value="">すべて</option>
           <option value="employee">従業員</option>
           <option value="punch">打刻</option>
           <option value="request">申請</option>
-          <option value="timesheet">タイムシート</option>
+          <option value="department">部署</option>
+          <option value="tenant">テナント</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label">実行者:</label>
-        <input type="text" class="form-input filter-input" placeholder="検索...">
+        <input type="text" id="filter-actor" class="form-input filter-input" placeholder="検索...">
       </div>
       <div class="filter-group">
         <label class="filter-label">開始日:</label>
-        <input type="date" class="form-input filter-input">
+        <input type="date" id="filter-start-date" class="form-input filter-input">
       </div>
       <div class="filter-group">
         <label class="filter-label">終了日:</label>
-        <input type="date" class="form-input filter-input">
+        <input type="date" id="filter-end-date" class="form-input filter-input">
       </div>
       <div class="filter-group">
-        <button class="btn btn-secondary">フィルタ適用</button>
+        <button class="btn btn-secondary" onclick="applyFilters()">フィルタ適用</button>
       </div>
     </div>
 
@@ -161,63 +162,8 @@
             </thead>
             <tbody>
               <tr>
-                <td>2025-01-15 10:30:25</td>
-                <td>山田太郎</td>
-                <td><span class="badge badge-primary">作成</span></td>
-                <td>申請</td>
-                <td>REQ001</td>
-                <td>-</td>
-                <td>出勤時刻修正申請</td>
-                <td>
-                  <a href="#modal-audit-detail" class="btn btn-sm btn-secondary">詳細</a>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-01-15 09:00:15</td>
-                <td>山田太郎</td>
-                <td><span class="badge badge-primary">作成</span></td>
-                <td>打刻</td>
-                <td>PUNCH001</td>
-                <td>-</td>
-                <td>出勤打刻（09:00）</td>
-                <td>
-                  <a href="#modal-audit-detail" class="btn btn-sm btn-secondary">詳細</a>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-01-14 19:20:10</td>
-                <td>田中マネージャー</td>
-                <td><span class="badge badge-success">承認</span></td>
-                <td>申請</td>
-                <td>REQ000</td>
-                <td>申請中</td>
-                <td>承認済み</td>
-                <td>
-                  <a href="#modal-audit-detail" class="btn btn-sm btn-secondary">詳細</a>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-01-14 15:30:45</td>
-                <td>佐藤花子</td>
-                <td><span class="badge badge-warning">更新</span></td>
-                <td>従業員</td>
-                <td>EMP002</td>
-                <td>部署: 営業部</td>
-                <td>部署: 開発部</td>
-                <td>
-                  <a href="#modal-audit-detail" class="btn btn-sm btn-secondary">詳細</a>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-01-13 11:00:00</td>
-                <td>システム管理者</td>
-                <td><span class="badge badge-info">エクスポート</span></td>
-                <td>レポート</td>
-                <td>EXPORT001</td>
-                <td>-</td>
-                <td>CSVエクスポート（勤怠明細）</td>
-                <td>
-                  <a href="#modal-audit-detail" class="btn btn-sm btn-secondary">詳細</a>
+                <td colspan="8" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">
+                  監査ログを読み込み中...
                 </td>
               </tr>
             </tbody>
@@ -225,12 +171,7 @@
         </div>
 
         <!-- ページネーション -->
-        <div class="pagination">
-          <a href="#" class="pagination-link" style="pointer-events: none; opacity: 0.5;">&laquo;</a>
-          <a href="#" class="pagination-link active">1</a>
-          <a href="#" class="pagination-link">2</a>
-          <a href="#" class="pagination-link">3</a>
-          <a href="#" class="pagination-link">&raquo;</a>
+        <div class="pagination" id="audit-log-pagination">
         </div>
       </div>
     </div>
@@ -242,51 +183,457 @@
           <h2 class="modal-title">監査ログ詳細</h2>
           <a href="#" class="modal-close">&times;</a>
         </div>
-        <div class="modal-body">
-          <div style="margin-bottom: var(--spacing-lg);">
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">日時:</div>
-              <div>2025-01-15 10:30:25</div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">実行者:</div>
-              <div>山田太郎 (EMP001)</div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">操作:</div>
-              <div><span class="badge badge-primary">作成</span></div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">エンティティ:</div>
-              <div>申請</div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">エンティティID:</div>
-              <div>REQ001</div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">変更前:</div>
-              <div style="font-family: monospace; font-size: var(--font-size-sm); background-color: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--border-radius);">null</div>
-            </div>
-            <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md);">
-              <div style="font-weight: 600; color: var(--text-secondary);">変更後:</div>
-              <div style="font-family: monospace; font-size: var(--font-size-sm); background-color: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--border-radius);">
-                {<br>
-                &nbsp;&nbsp;"type": "edit",<br>
-                &nbsp;&nbsp;"target_date": "2025-01-15",<br>
-                &nbsp;&nbsp;"content": "出勤時刻の修正（09:00 → 08:30）"<br>
-                }
-              </div>
-            </div>
-          </div>
+        <div class="modal-body" id="audit-detail-body">
         </div>
         <div class="modal-footer">
-          <a href="#" class="btn btn-secondary">閉じる</a>
+          <a href="#" class="btn btn-secondary modal-close">閉じる</a>
         </div>
       </div>
     </div>
   </main>
   <script src="../scripts/common.js"></script>
+  <script>
+    // ============================================
+    // 監査ログ - API連携
+    // ============================================
+
+    let auditLogs = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let filters = {
+      action: '',
+      entity: '',
+      actor: '',
+      start_date: '',
+      end_date: ''
+    };
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      setupEventListeners();
+      updateHeaderUserInfo();
+      
+      // 日付フィルタの初期値を設定（過去30日）
+      const today = getCurrentTime();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      const startDateInput = document.getElementById('filter-start-date');
+      const endDateInput = document.getElementById('filter-end-date');
+      if (startDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+      }
+      if (endDateInput) {
+        endDateInput.value = formatDate(today);
+      }
+      
+      await loadAuditLogs();
+    });
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // モーダルを閉じる
+      document.querySelectorAll('.modal-close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const modal = this.closest('.modal');
+          if (modal) {
+            modal.style.display = 'none';
+          }
+        });
+      });
+
+      // モーダル外クリックで閉じる
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // 監査ログを読み込み
+    async function loadAuditLogs(page = 1) {
+      try {
+        let url = `${API_BASE_URL}/audit-logs?page=${page}&limit=50`;
+        
+        if (filters.action) {
+          url += `&action=${encodeURIComponent(filters.action)}`;
+        }
+        if (filters.entity) {
+          url += `&entity=${encodeURIComponent(filters.entity)}`;
+        }
+        if (filters.actor) {
+          // 実行者名で検索（API側で対応が必要な場合は別途実装）
+          // 現時点ではactor_user_idで検索する必要があるため、実行者名検索はスキップ
+        }
+        if (filters.start_date) {
+          url += `&start_date=${filters.start_date}`;
+        }
+        if (filters.end_date) {
+          url += `&end_date=${filters.end_date}`;
+        }
+
+        const response = await apiFetch(url);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          auditLogs = data.data.items || [];
+          currentPage = data.data.page || 1;
+          totalPages = data.data.total_pages || 1;
+          renderAuditLogs();
+          renderPagination();
+        } else {
+          console.error('監査ログ取得エラー:', data);
+          if (data.error?.code === 'FORBIDDEN') {
+            alert('監査ログを閲覧する権限がありません');
+          } else {
+            alert('監査ログの取得に失敗しました: ' + (data.error?.message || '不明なエラー'));
+          }
+        }
+      } catch (error) {
+        console.error('監査ログの読み込みエラー:', error);
+        alert('監査ログの取得に失敗しました');
+      }
+    }
+
+    // 監査ログ一覧を描画
+    function renderAuditLogs() {
+      const tbody = document.querySelector('.table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (auditLogs.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="8" style="text-align: center; padding: var(--spacing-lg); color: var(--text-secondary);">監査ログがありません</td>';
+        tbody.appendChild(row);
+        return;
+      }
+
+      auditLogs.forEach(log => {
+        const row = document.createElement('tr');
+        
+        const occurredAt = new Date(log.occurred_at);
+        const dateStr = occurredAt.toLocaleString('ja-JP');
+        
+        const actorName = log.actor_employee_name || log.actor_user_name || '不明';
+        const actorCode = log.actor_employee_code ? ` (${log.actor_employee_code})` : '';
+        
+        // 操作バッジ
+        const actionBadges = {
+          'create': '<span class="badge badge-primary">作成</span>',
+          'update': '<span class="badge badge-warning">更新</span>',
+          'delete': '<span class="badge badge-error">削除</span>',
+          'approve': '<span class="badge badge-success">承認</span>',
+          'reject': '<span class="badge badge-error">差戻し</span>',
+          'invite': '<span class="badge badge-info">招待</span>',
+          'proxy': '<span class="badge badge-warning">代理</span>'
+        };
+        const actionBadge = actionBadges[log.action.split('.')[1]] || `<span class="badge badge-secondary">${log.action}</span>`;
+        
+        // エンティティラベル
+        const entityLabels = {
+          'employee': '従業員',
+          'punch': '打刻',
+          'request': '申請',
+          'department': '部署',
+          'tenant': 'テナント',
+          'rule_set': '就業ルール',
+          'holiday': '祝日'
+        };
+        const entityLabel = entityLabels[log.entity] || log.entity;
+        
+        // 変更前・変更後の簡易表示
+        const beforeStr = log.before ? JSON.stringify(log.before).substring(0, 50) + '...' : '-';
+        const afterStr = log.after ? JSON.stringify(log.after).substring(0, 50) + '...' : '-';
+
+        row.innerHTML = `
+          <td>${dateStr}</td>
+          <td>${actorName}${actorCode}</td>
+          <td>${actionBadge}</td>
+          <td>${entityLabel}</td>
+          <td>${log.entity_id ? log.entity_id.substring(0, 8) + '...' : '-'}</td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${beforeStr}</td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${afterStr}</td>
+          <td>
+            <button onclick="showAuditLogDetail('${log.id}')" class="btn btn-sm btn-secondary">詳細</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // ページネーションを描画
+    function renderPagination() {
+      const pagination = document.getElementById('audit-log-pagination');
+      if (!pagination) return;
+
+      pagination.innerHTML = '';
+
+      // 前へボタン
+      const prevLink = document.createElement('a');
+      prevLink.href = '#';
+      prevLink.className = 'pagination-link';
+      prevLink.textContent = '«';
+      if (currentPage <= 1) {
+        prevLink.style.pointerEvents = 'none';
+        prevLink.style.opacity = '0.5';
+      } else {
+        prevLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadAuditLogs(currentPage - 1);
+        });
+      }
+      pagination.appendChild(prevLink);
+
+      // ページ番号
+      for (let i = 1; i <= totalPages && i <= 10; i++) {
+        const pageLink = document.createElement('a');
+        pageLink.href = '#';
+        pageLink.className = 'pagination-link';
+        if (i === currentPage) {
+          pageLink.classList.add('active');
+        }
+        pageLink.textContent = i;
+        pageLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadAuditLogs(i);
+        });
+        pagination.appendChild(pageLink);
+      }
+
+      // 次へボタン
+      const nextLink = document.createElement('a');
+      nextLink.href = '#';
+      nextLink.className = 'pagination-link';
+      nextLink.textContent = '»';
+      if (currentPage >= totalPages) {
+        nextLink.style.pointerEvents = 'none';
+        nextLink.style.opacity = '0.5';
+      } else {
+        nextLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          loadAuditLogs(currentPage + 1);
+        });
+      }
+      pagination.appendChild(nextLink);
+    }
+
+    // フィルタを適用
+    function applyFilters() {
+      filters.action = document.getElementById('filter-action').value;
+      filters.entity = document.getElementById('filter-entity').value;
+      filters.actor = document.getElementById('filter-actor').value;
+      filters.start_date = document.getElementById('filter-start-date').value;
+      filters.end_date = document.getElementById('filter-end-date').value;
+      
+      loadAuditLogs(1);
+    }
+
+    // 監査ログ詳細を表示
+    async function showAuditLogDetail(logId) {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/audit-logs/${logId}`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          const log = data.data;
+          renderAuditLogDetail(log);
+          
+          const modal = document.getElementById('modal-audit-detail');
+          if (modal) {
+            modal.style.display = 'block';
+          }
+        } else {
+          console.error('監査ログ詳細取得エラー:', data);
+          alert('監査ログの取得に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('監査ログ詳細の読み込みエラー:', error);
+        alert('監査ログの取得に失敗しました');
+      }
+    }
+
+    // 監査ログ詳細を描画
+    function renderAuditLogDetail(log) {
+      const body = document.getElementById('audit-detail-body');
+      if (!body) return;
+
+      const occurredAt = new Date(log.occurred_at);
+      const dateStr = occurredAt.toLocaleString('ja-JP');
+      
+      const actorName = log.actor_employee_name || log.actor_user_name || '不明';
+      const actorCode = log.actor_employee_code ? ` (${log.actor_employee_code})` : '';
+      const actorEmail = log.actor_user_email ? ` (${log.actor_user_email})` : '';
+      
+      // 操作バッジ
+      const actionBadges = {
+        'create': '<span class="badge badge-primary">作成</span>',
+        'update': '<span class="badge badge-warning">更新</span>',
+        'delete': '<span class="badge badge-error">削除</span>',
+        'approve': '<span class="badge badge-success">承認</span>',
+        'reject': '<span class="badge badge-error">差戻し</span>',
+        'invite': '<span class="badge badge-info">招待</span>',
+        'proxy': '<span class="badge badge-warning">代理</span>'
+      };
+      const actionParts = log.action.split('.');
+      const actionBadge = actionBadges[actionParts[1]] || `<span class="badge badge-secondary">${log.action}</span>`;
+      
+      // エンティティラベル
+      const entityLabels = {
+        'employee': '従業員',
+        'punch': '打刻',
+        'request': '申請',
+        'department': '部署',
+        'tenant': 'テナント',
+        'rule_set': '就業ルール',
+        'holiday': '祝日'
+      };
+      const entityLabel = entityLabels[log.entity] || log.entity;
+      
+      const beforeJson = log.before ? JSON.stringify(log.before, null, 2) : 'null';
+      const afterJson = log.after ? JSON.stringify(log.after, null, 2) : 'null';
+
+      body.innerHTML = `
+        <div style="margin-bottom: var(--spacing-lg);">
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">日時:</div>
+            <div>${dateStr}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">実行者:</div>
+            <div>${actorName}${actorCode}${actorEmail}</div>
+          </div>
+          ${log.tenant_name ? `
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">テナント:</div>
+            <div>${log.tenant_name}</div>
+          </div>
+          ` : ''}
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">操作:</div>
+            <div>${actionBadge}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">エンティティ:</div>
+            <div>${entityLabel}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">エンティティID:</div>
+            <div>${log.entity_id || '-'}</div>
+          </div>
+          ${log.ip_address ? `
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">IPアドレス:</div>
+            <div>${log.ip_address}</div>
+          </div>
+          ` : ''}
+          ${log.user_agent ? `
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">ユーザーエージェント:</div>
+            <div style="font-size: var(--font-size-sm);">${log.user_agent}</div>
+          </div>
+          ` : ''}
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">変更前:</div>
+            <div style="font-family: monospace; font-size: var(--font-size-sm); background-color: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--border-radius); white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto;">${beforeJson}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 150px 1fr; gap: var(--spacing-md);">
+            <div style="font-weight: 600; color: var(--text-secondary);">変更後:</div>
+            <div style="font-family: monospace; font-size: var(--font-size-sm); background-color: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--border-radius); white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto;">${afterJson}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 監査ログをエクスポート
+    async function exportAuditLogs() {
+      try {
+        // 全件取得（エクスポート用）
+        let url = `${API_BASE_URL}/audit-logs?limit=10000`;
+        
+        if (filters.action) {
+          url += `&action=${encodeURIComponent(filters.action)}`;
+        }
+        if (filters.entity) {
+          url += `&entity=${encodeURIComponent(filters.entity)}`;
+        }
+        if (filters.start_date) {
+          url += `&start_date=${filters.start_date}`;
+        }
+        if (filters.end_date) {
+          url += `&end_date=${filters.end_date}`;
+        }
+
+        const response = await apiFetch(url);
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          alert('監査ログの取得に失敗しました');
+          return;
+        }
+
+        const logs = data.data.items || [];
+        
+        if (logs.length === 0) {
+          alert('エクスポートするデータがありません');
+          return;
+        }
+
+        // CSVヘッダー
+        const headers = ['日時', '実行者', '操作', 'エンティティ', 'エンティティID', '変更前', '変更後', 'IPアドレス', 'ユーザーエージェント'];
+        
+        // CSVデータ行
+        const rows = logs.map(log => {
+          const occurredAt = new Date(log.occurred_at);
+          const dateStr = occurredAt.toLocaleString('ja-JP');
+          const actorName = log.actor_employee_name || log.actor_user_name || '不明';
+          const beforeJson = log.before ? JSON.stringify(log.before) : '';
+          const afterJson = log.after ? JSON.stringify(log.after) : '';
+          
+          return [
+            dateStr,
+            actorName,
+            log.action,
+            log.entity,
+            log.entity_id || '',
+            beforeJson,
+            afterJson,
+            log.ip_address || '',
+            log.user_agent || ''
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+        });
+
+        // CSV文字列を生成
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        
+        // BOMを追加
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // ダウンロード
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error('CSVエクスポートエラー:', error);
+        alert('CSVエクスポートに失敗しました');
+      }
+    }
+
+    // グローバルに公開
+    window.applyFilters = applyFilters;
+    window.showAuditLogDetail = showAuditLogDetail;
+    window.exportAuditLogs = exportAuditLogs;
+  </script>
 </body>
 </html>
 

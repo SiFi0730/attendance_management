@@ -741,7 +741,9 @@
     // 給与明細詳細を表示
     async function showPayslipDetail(employeeId, period) {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/payslips/${employeeId}/${period}`);
+        // periodをYYYY-MM形式に変換
+        const periodFormatted = period.replace('年', '-').replace('月分', '').replace('分', '');
+        const response = await apiFetch(`${API_BASE_URL}/payslips/${employeeId}/${periodFormatted}`);
         const data = await response.json();
 
         if (response.ok && data.success) {
