@@ -45,6 +45,7 @@ use App\Controllers\BusinessHoursController;
 use App\Controllers\RuleSetController;
 use App\Controllers\HolidayCalendarController;
 use App\Controllers\ReportController;
+use App\Controllers\PayslipController;
 use App\Controllers\DevController;
 
 // リクエストとレスポンスのインスタンス作成
@@ -160,6 +161,18 @@ $router->get('/reports/summary', [ReportController::class, 'summary'], [
     }
 ]);
 $router->get('/reports/export/attendance', [ReportController::class, 'exportAttendance'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// 給与明細
+$router->get('/payslips', [PayslipController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/payslips/{employee_id}/{period}', [PayslipController::class, 'show'], [
     function (Request $req, Response $res) {
         return AuthMiddleware::requireAuth($req, $res);
     }

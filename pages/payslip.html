@@ -384,14 +384,11 @@
         <select id="employee-filter" class="form-select filter-input">
           <option value="">すべて</option>
           <option value="self" selected>自分</option>
-          <option value="emp001">山田太郎</option>
-          <option value="emp002">佐藤花子</option>
-          <option value="emp003">鈴木一郎</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label">支給年月:</label>
-        <input type="month" id="period-filter" class="form-input filter-input" value="2025-01">
+        <input type="month" id="period-filter" class="form-input filter-input">
       </div>
       <div class="filter-group">
         <button id="search-btn" class="btn btn-primary">検索</button>
@@ -400,89 +397,11 @@
 
     <!-- 給与明細一覧 -->
     <div id="payslip-list-view" class="payslip-container">
-      <div class="payslip-list">
-        <div class="payslip-item" data-payslip-id="payslip-001">
-          <div class="payslip-item-header">
-            <div>
-              <div class="payslip-item-title">2025年1月分 給与明細</div>
-              <div class="payslip-item-period">支給日: 2025年2月25日</div>
-            </div>
-            <span class="badge badge-success">確定</span>
-          </div>
-          <div class="payslip-item-details">
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">基本給</span>
-              <span class="payslip-item-detail-value">¥300,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">残業手当</span>
-              <span class="payslip-item-detail-value">¥12,500</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">控除合計</span>
-              <span class="payslip-item-detail-value">¥-65,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">差引支給額</span>
-              <span class="payslip-item-detail-value amount">¥247,500</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="payslip-item" data-payslip-id="payslip-002">
-          <div class="payslip-item-header">
-            <div>
-              <div class="payslip-item-title">2024年12月分 給与明細</div>
-              <div class="payslip-item-period">支給日: 2025年1月25日</div>
-            </div>
-            <span class="badge badge-success">確定</span>
-          </div>
-          <div class="payslip-item-details">
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">基本給</span>
-              <span class="payslip-item-detail-value">¥300,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">残業手当</span>
-              <span class="payslip-item-detail-value">¥8,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">控除合計</span>
-              <span class="payslip-item-detail-value">¥-65,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">差引支給額</span>
-              <span class="payslip-item-detail-value amount">¥243,000</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="payslip-item" data-payslip-id="payslip-003">
-          <div class="payslip-item-header">
-            <div>
-              <div class="payslip-item-title">2024年11月分 給与明細</div>
-              <div class="payslip-item-period">支給日: 2024年12月25日</div>
-            </div>
-            <span class="badge badge-success">確定</span>
-          </div>
-          <div class="payslip-item-details">
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">基本給</span>
-              <span class="payslip-item-detail-value">¥300,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">残業手当</span>
-              <span class="payslip-item-detail-value">¥15,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">控除合計</span>
-              <span class="payslip-item-detail-value">¥-65,000</span>
-            </div>
-            <div class="payslip-item-detail">
-              <span class="payslip-item-detail-label">差引支給額</span>
-              <span class="payslip-item-detail-value amount">¥250,000</span>
-            </div>
-          </div>
+      <div class="payslip-list" id="payslip-list">
+        <div class="payslip-empty">
+          <div class="payslip-empty-icon">💰</div>
+          <div class="payslip-empty-title">給与明細がありません</div>
+          <div class="payslip-empty-description">期間を選択して検索してください</div>
         </div>
       </div>
     </div>
@@ -492,7 +411,7 @@
       <div class="payslip-detail">
         <!-- ヘッダー -->
         <div class="payslip-detail-header">
-          <div class="payslip-detail-company">株式会社サンプル</div>
+          <div class="payslip-detail-company" id="detail-company-name">株式会社サンプル</div>
           <div class="payslip-detail-title">給与明細書</div>
         </div>
 
@@ -537,35 +456,11 @@
               </tr>
             </thead>
             <tbody id="detail-payment-items">
-              <tr>
-                <td>基本給</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥300,000</td>
-              </tr>
-              <tr>
-                <td>残業手当</td>
-                <td>2.5時間</td>
-                <td>¥5,000</td>
-                <td class="text-right amount">¥12,500</td>
-              </tr>
-              <tr>
-                <td>通勤手当</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥15,000</td>
-              </tr>
-              <tr>
-                <td>家族手当</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥10,000</td>
-              </tr>
             </tbody>
             <tfoot>
               <tr>
                 <td colspan="3" style="font-weight: 600; text-align: right;">支給合計</td>
-                <td class="text-right amount" id="detail-payment-total">¥337,500</td>
+                <td class="text-right amount" id="detail-payment-total">¥0</td>
               </tr>
             </tfoot>
           </table>
@@ -584,41 +479,11 @@
               </tr>
             </thead>
             <tbody id="detail-deduction-items">
-              <tr>
-                <td>健康保険料</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥-18,000</td>
-              </tr>
-              <tr>
-                <td>厚生年金保険料</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥-27,000</td>
-              </tr>
-              <tr>
-                <td>雇用保険料</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥-900</td>
-              </tr>
-              <tr>
-                <td>所得税</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥-8,000</td>
-              </tr>
-              <tr>
-                <td>住民税</td>
-                <td>-</td>
-                <td>-</td>
-                <td class="text-right amount">¥-11,100</td>
-              </tr>
             </tbody>
             <tfoot>
               <tr>
                 <td colspan="3" style="font-weight: 600; text-align: right;">控除合計</td>
-                <td class="text-right amount" id="detail-deduction-total">¥-65,000</td>
+                <td class="text-right amount" id="detail-deduction-total">¥0</td>
               </tr>
             </tfoot>
           </table>
@@ -627,7 +492,7 @@
         <!-- 差引支給額 -->
         <div class="payslip-detail-total">
           <span class="payslip-detail-total-label">差引支給額</span>
-          <span class="payslip-detail-total-amount" id="detail-net-payment">¥272,500</span>
+          <span class="payslip-detail-total-amount" id="detail-net-payment">¥0</span>
         </div>
 
         <!-- フッター -->
@@ -646,24 +511,112 @@
     </div>
   </main>
 
+  <script src="../scripts/common.js"></script>
   <script>
-    // 給与明細一覧のアイテムクリック処理
-    document.addEventListener('DOMContentLoaded', function() {
-      const payslipItems = document.querySelectorAll('.payslip-item');
-      const listView = document.getElementById('payslip-list-view');
-      const detailView = document.getElementById('payslip-detail-view');
+    // ============================================
+    // 給与明細 - API連携
+    // ============================================
 
-      payslipItems.forEach(function(item) {
-        item.addEventListener('click', function() {
-          const payslipId = this.getAttribute('data-payslip-id');
-          showPayslipDetail(payslipId);
+    let employees = [];
+    let payslips = [];
+    let currentEmployeeId = null;
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Promise.all([
+        loadEmployees(),
+        loadTenant()
+      ]);
+      setupEventListeners();
+      updateHeaderUserInfo();
+      
+      // 支給年月の初期値を今月に設定
+      const periodInput = document.getElementById('period-filter');
+      if (periodInput) {
+        const today = getCurrentTime();
+        periodInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      // 初期検索
+      await searchPayslips();
+    });
+
+    // テナント情報を読み込み
+    async function loadTenant() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/tenants`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          const tenant = Array.isArray(data.data) ? data.data[0] : data.data;
+          if (tenant) {
+            const companyNameElement = document.getElementById('detail-company-name');
+            if (companyNameElement) {
+              companyNameElement.textContent = tenant.name || '株式会社サンプル';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('テナント情報の読み込みエラー:', error);
+      }
+    }
+
+    // 従業員一覧を読み込み
+    async function loadEmployees() {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/employees?limit=1000`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          employees = data.data.items || [];
+          
+          const select = document.getElementById('employee-filter');
+          if (select) {
+            select.innerHTML = '<option value="">すべて</option><option value="self" selected>自分</option>';
+            employees.forEach(emp => {
+              const option = document.createElement('option');
+              option.value = emp.id;
+              option.textContent = `${emp.name}${emp.department_name ? `（${emp.department_name}）` : ''}`;
+              select.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('従業員一覧の読み込みエラー:', error);
+      }
+    }
+
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // 検索ボタン
+      const searchBtn = document.getElementById('search-btn');
+      if (searchBtn) {
+        searchBtn.addEventListener('click', async function() {
+          await searchPayslips();
         });
-      });
+      }
+
+      // 給与明細アイテムのクリック（動的に追加される要素のため、イベント委譲を使用）
+      const payslipList = document.getElementById('payslip-list');
+      if (payslipList) {
+        payslipList.addEventListener('click', function(e) {
+          const item = e.target.closest('.payslip-item');
+          if (item) {
+            const payslipId = item.getAttribute('data-payslip-id');
+            if (payslipId) {
+              const [employeeId, period] = payslipId.split('_');
+              showPayslipDetail(employeeId, period);
+            }
+          }
+        });
+      }
 
       // 戻るボタン
       const backBtn = document.getElementById('back-btn');
       if (backBtn) {
         backBtn.addEventListener('click', function() {
+          const listView = document.getElementById('payslip-list-view');
+          const detailView = document.getElementById('payslip-detail-view');
           listView.style.display = 'block';
           detailView.style.display = 'none';
         });
@@ -677,7 +630,7 @@
         });
       }
 
-      // PDFダウンロードボタン（将来実装）
+      // PDFダウンロードボタン
       const downloadBtn = document.getElementById('download-btn');
       if (downloadBtn) {
         downloadBtn.addEventListener('click', function() {
@@ -691,93 +644,171 @@
         const now = getCurrentTime();
         printDateElement.textContent = now.toLocaleString('ja-JP');
       }
+    }
 
-      // 検索ボタン
-      const searchBtn = document.getElementById('search-btn');
-      if (searchBtn) {
-        searchBtn.addEventListener('click', function() {
-          const employeeFilter = document.getElementById('employee-filter').value;
-          const periodFilter = document.getElementById('period-filter').value;
-          // 実際の実装では、ここでAPIを呼び出してフィルタリング
-          console.log('検索:', { employee: employeeFilter, period: periodFilter });
-        });
+    // 給与明細を検索
+    async function searchPayslips() {
+      const employeeFilter = document.getElementById('employee-filter').value;
+      const periodFilter = document.getElementById('period-filter').value;
+
+      if (!periodFilter) {
+        alert('支給年月を選択してください');
+        return;
       }
-    });
+
+      try {
+        let url = `${API_BASE_URL}/payslips?period=${periodFilter}`;
+        
+        if (employeeFilter === 'self') {
+          // 「自分」の場合はemployee_idを指定しない（API側でuser_idでフィルタリング）
+          // または、従業員一覧から自分の従業員を探す
+          // 現時点では、employee_idを指定しない（API側でuser_idでフィルタリングされる）
+        } else if (employeeFilter) {
+          url += `&employee_id=${employeeFilter}`;
+        }
+
+        const response = await apiFetch(url);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          payslips = data.data || [];
+          renderPayslipList();
+        } else {
+          console.error('給与明細取得エラー:', data);
+          alert('給与明細の取得に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('給与明細の読み込みエラー:', error);
+        alert('給与明細の取得に失敗しました');
+      }
+    }
+
+    // 給与明細一覧を描画
+    function renderPayslipList() {
+      const listContainer = document.getElementById('payslip-list');
+      if (!listContainer) return;
+
+      listContainer.innerHTML = '';
+
+      if (payslips.length === 0) {
+        listContainer.innerHTML = `
+          <div class="payslip-empty">
+            <div class="payslip-empty-icon">💰</div>
+            <div class="payslip-empty-title">給与明細がありません</div>
+            <div class="payslip-empty-description">選択した期間に給与明細データが存在しません</div>
+          </div>
+        `;
+        return;
+      }
+
+      payslips.forEach(payslip => {
+        const item = document.createElement('div');
+        item.className = 'payslip-item';
+        item.setAttribute('data-payslip-id', `${payslip.employee_id}_${payslip.period.replace('年', '-').replace('月分', '').replace('分', '')}`);
+        
+        item.innerHTML = `
+          <div class="payslip-item-header">
+            <div>
+              <div class="payslip-item-title">${payslip.period} 給与明細</div>
+              <div class="payslip-item-period">支給日: ${payslip.payment_date}</div>
+            </div>
+            <span class="badge badge-success">${payslip.status || '確定'}</span>
+          </div>
+          <div class="payslip-item-details">
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">基本給</span>
+              <span class="payslip-item-detail-value">¥${payslip.base_salary?.toLocaleString() || 0}</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">残業手当</span>
+              <span class="payslip-item-detail-value">¥${payslip.overtime_pay?.toLocaleString() || 0}</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">控除合計</span>
+              <span class="payslip-item-detail-value">¥-${payslip.deduction_total?.toLocaleString() || 0}</span>
+            </div>
+            <div class="payslip-item-detail">
+              <span class="payslip-item-detail-label">差引支給額</span>
+              <span class="payslip-item-detail-value amount">¥${payslip.net_payment?.toLocaleString() || 0}</span>
+            </div>
+          </div>
+        `;
+        
+        listContainer.appendChild(item);
+      });
+    }
 
     // 給与明細詳細を表示
-    function showPayslipDetail(payslipId) {
-      const listView = document.getElementById('payslip-list-view');
-      const detailView = document.getElementById('payslip-detail-view');
+    async function showPayslipDetail(employeeId, period) {
+      try {
+        const response = await apiFetch(`${API_BASE_URL}/payslips/${employeeId}/${period}`);
+        const data = await response.json();
 
-      // 実際の実装では、payslipIdに基づいてAPIからデータを取得
-      // ここではサンプルデータを使用
-      updatePayslipDetail({
-        period: '2025年1月分',
-        paymentDate: '2025年2月25日',
-        employeeCode: 'EMP001',
-        employeeName: '山田 太郎',
-        department: '営業部',
-        employmentType: '正社員',
-        paymentItems: [
-          { name: '基本給', quantity: '-', unitPrice: '-', amount: 300000 },
-          { name: '残業手当', quantity: '2.5時間', unitPrice: '¥5,000', amount: 12500 },
-          { name: '通勤手当', quantity: '-', unitPrice: '-', amount: 15000 },
-          { name: '家族手当', quantity: '-', unitPrice: '-', amount: 10000 }
-        ],
-        deductionItems: [
-          { name: '健康保険料', quantity: '-', unitPrice: '-', amount: 18000 },
-          { name: '厚生年金保険料', quantity: '-', unitPrice: '-', amount: 27000 },
-          { name: '雇用保険料', quantity: '-', unitPrice: '-', amount: 900 },
-          { name: '所得税', quantity: '-', unitPrice: '-', amount: 8000 },
-          { name: '住民税', quantity: '-', unitPrice: '-', amount: 11100 }
-        ]
-      });
+        if (response.ok && data.success) {
+          const payslip = data.data;
+          updatePayslipDetail(payslip);
 
-      listView.style.display = 'none';
-      detailView.style.display = 'block';
+          const listView = document.getElementById('payslip-list-view');
+          const detailView = document.getElementById('payslip-detail-view');
+          listView.style.display = 'none';
+          detailView.style.display = 'block';
+        } else {
+          console.error('給与明細詳細取得エラー:', data);
+          alert('給与明細の取得に失敗しました: ' + (data.error?.message || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('給与明細詳細の読み込みエラー:', error);
+        alert('給与明細の取得に失敗しました');
+      }
     }
 
     // 給与明細詳細を更新
-    function updatePayslipDetail(data) {
-      document.getElementById('detail-period').textContent = data.period;
-      document.getElementById('detail-payment-date').textContent = data.paymentDate;
-      document.getElementById('detail-employee-code').textContent = data.employeeCode;
-      document.getElementById('detail-employee-name').textContent = data.employeeName;
-      document.getElementById('detail-department').textContent = data.department;
-      document.getElementById('detail-employment-type').textContent = data.employmentType;
+    function updatePayslipDetail(payslip) {
+      document.getElementById('detail-period').textContent = payslip.period;
+      document.getElementById('detail-payment-date').textContent = payslip.payment_date;
+      document.getElementById('detail-employee-code').textContent = payslip.employee_code;
+      document.getElementById('detail-employee-name').textContent = payslip.employee_name;
+      document.getElementById('detail-department').textContent = payslip.department_name || '-';
+      document.getElementById('detail-employment-type').textContent = payslip.employment_type;
 
       // 支給項目を更新
       const paymentItemsTbody = document.getElementById('detail-payment-items');
       paymentItemsTbody.innerHTML = '';
       let paymentTotal = 0;
-      data.paymentItems.forEach(function(item) {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.quantity}</td>
-          <td>${item.unitPrice}</td>
-          <td class="text-right amount">¥${item.amount.toLocaleString()}</td>
-        `;
-        paymentItemsTbody.appendChild(row);
-        paymentTotal += item.amount;
-      });
+      
+      if (payslip.payment_items && payslip.payment_items.length > 0) {
+        payslip.payment_items.forEach(function(item) {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.unit_price}</td>
+            <td class="text-right amount">¥${item.amount.toLocaleString()}</td>
+          `;
+          paymentItemsTbody.appendChild(row);
+          paymentTotal += item.amount;
+        });
+      }
       document.getElementById('detail-payment-total').textContent = '¥' + paymentTotal.toLocaleString();
 
       // 控除項目を更新
       const deductionItemsTbody = document.getElementById('detail-deduction-items');
       deductionItemsTbody.innerHTML = '';
       let deductionTotal = 0;
-      data.deductionItems.forEach(function(item) {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.quantity}</td>
-          <td>${item.unitPrice}</td>
-          <td class="text-right amount">¥-${item.amount.toLocaleString()}</td>
-        `;
-        deductionItemsTbody.appendChild(row);
-        deductionTotal += item.amount;
-      });
+      
+      if (payslip.deduction_items && payslip.deduction_items.length > 0) {
+        payslip.deduction_items.forEach(function(item) {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.unit_price}</td>
+            <td class="text-right amount">¥-${item.amount.toLocaleString()}</td>
+          `;
+          deductionItemsTbody.appendChild(row);
+          deductionTotal += item.amount;
+        });
+      }
       document.getElementById('detail-deduction-total').textContent = '¥-' + deductionTotal.toLocaleString();
 
       // 差引支給額を更新
@@ -785,7 +816,6 @@
       document.getElementById('detail-net-payment').textContent = '¥' + netPayment.toLocaleString();
     }
   </script>
-  <script src="../scripts/common.js"></script>
 </body>
 </html>
 
