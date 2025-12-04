@@ -128,11 +128,11 @@
           </div>
           <div class="filter-group">
             <label class="filter-label">開始日:</label>
-            <input type="date" class="form-input filter-input" value="2025-01-01">
+            <input type="date" id="summary-start-date" class="form-input filter-input">
           </div>
           <div class="filter-group">
             <label class="filter-label">終了日:</label>
-            <input type="date" class="form-input filter-input" value="2025-01-31">
+            <input type="date" id="summary-end-date" class="form-input filter-input">
           </div>
           <div class="filter-group">
             <label class="filter-label">部署:</label>
@@ -520,10 +520,20 @@
 
     // 集計レポートを読み込み
     async function loadSummary() {
-      const periodType = document.querySelector('#tab-summary .filter-bar select').value;
-      const startDate = document.getElementById('summary-start-date').value;
-      const endDate = document.getElementById('summary-end-date').value;
-      const deptId = document.querySelectorAll('#tab-summary .filter-bar select')[1].value;
+      const periodTypeSelect = document.querySelector('#tab-summary .filter-bar select');
+      const startDateInput = document.getElementById('summary-start-date');
+      const endDateInput = document.getElementById('summary-end-date');
+      const deptSelects = document.querySelectorAll('#tab-summary .filter-bar select');
+      
+      if (!periodTypeSelect || !startDateInput || !endDateInput) {
+        alert('フィルタ要素が見つかりません。ページを再読み込みしてください。');
+        return;
+      }
+      
+      const periodType = periodTypeSelect.value;
+      const startDate = startDateInput.value;
+      const endDate = endDateInput.value;
+      const deptId = deptSelects.length > 1 ? deptSelects[1].value : '';
 
       if (!startDate || !endDate) {
         alert('開始日と終了日を入力してください');

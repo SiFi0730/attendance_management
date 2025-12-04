@@ -1,6 +1,6 @@
 # 実装状況レポート
 
-最終更新: 2025-01-15
+最終更新: 2025-12-03
 
 ## 📊 実装状況サマリー
 
@@ -53,11 +53,90 @@
 - ✅ 循環参照防止
 - ✅ 配下部署・従業員チェック
 
-#### 6. フロントエンド
+#### 6. 打刻機能
+- ✅ 打刻API (`POST /punches`)
+- ✅ 代理打刻API (`POST /punches/proxy`)
+- ✅ 打刻一覧取得 (`GET /punches`)
+- ✅ 打刻検証（順序、重複、未来日時）
+- ✅ 監査ログ記録
+
+#### 7. 申請・承認機能
+- ✅ 申請作成 (`POST /requests`)
+- ✅ 申請一覧取得 (`GET /requests`)
+- ✅ 申請詳細取得 (`GET /requests/{id}`)
+- ✅ 申請承認 (`POST /requests/{id}/approve`)
+- ✅ 申請差戻し (`POST /requests/{id}/reject`)
+- ✅ 権限チェック
+
+#### 8. タイムシート機能
+- ✅ タイムシート一覧取得 (`GET /timesheets`)
+- ✅ タイムシート詳細取得 (`GET /timesheets/{id}`)
+- ✅ タイムシート申請 (`POST /timesheets/{id}/submit`)
+- ✅ タイムシート承認 (`POST /timesheets/{id}/approve`)
+- ✅ タイムシート差戻し (`POST /timesheets/{id}/reject`)
+- ⚠️ 勤務セッション自動生成（未実装、手動生成が必要）
+
+#### 9. 就業ルール管理
+- ✅ 営業時間設定 (`GET /business-hours`, `PUT /business-hours`)
+- ✅ 就業ルールセット (`GET /rule-sets/current`, `PUT /rule-sets/current`)
+- ✅ 祝日カレンダー (`GET /holidays`, `POST /holidays`, `PUT /holidays/{id}`, `DELETE /holidays/{id}`)
+
+#### 10. CSV入出力
+- ✅ CSVエクスポート（従業員一覧、勤怠明細、集計結果、打刻原票）
+- ✅ CSVインポート（打刻データ）
+- ⚠️ 非同期ジョブ管理（未実装、同期処理）
+
+#### 11. ガントチャート
+- ✅ ガントチャートデータ取得（打刻データから生成）
+- ✅ フロントエンド実装（日/週/月スケール対応）
+- ✅ フィルタリング（部署、従業員、日付範囲）
+
+#### 12. レポート・ダッシュボード
+- ✅ 集計レポートAPI (`GET /reports/summary`)
+- ✅ ダッシュボード統計API (`GET /dashboard/stats`)
+- ✅ 今日の打刻状況API (`GET /dashboard/today-punches`)
+- ✅ 承認待ち申請API (`GET /dashboard/pending-requests`)
+- ✅ フロントエンド実装
+
+#### 13. 給与明細
+- ✅ 給与明細一覧取得 (`GET /payslips`)
+- ✅ 給与明細詳細取得 (`GET /payslips/{employee_id}/{period}`)
+- ✅ 給与計算ロジック（基本給、残業手当、控除計算）
+- ✅ フロントエンド実装
+
+#### 14. 監査ログ
+- ✅ 監査ログ一覧取得 (`GET /audit-logs`)
+- ✅ 監査ログ詳細取得 (`GET /audit-logs/{id}`)
+- ✅ フィルタリング（操作種別、エンティティ、実行者、期間）
+- ✅ CSVエクスポート
+- ✅ フロントエンド実装
+
+#### 15. 通知機能
+- ✅ 通知一覧取得 (`GET /notifications`)
+- ✅ 通知既読 (`PUT /notifications/{id}/read`)
+- ⚠️ 通知送信機能（未実装、テーブルのみ準備済み）
+
+#### 16. ファイル管理
+- ✅ ファイルアップロード (`POST /files/upload`)
+- ✅ ファイル取得 (`GET /files/{id}`)
+- ✅ ファイルダウンロード (`GET /files/{id}/download`)
+- ✅ ファイル削除 (`DELETE /files/{id}`)
+- ⚠️ テナントロゴアップロード（専用エンドポイント未実装）
+
+#### 17. フロントエンド
 - ✅ ログインページ（API連携）
 - ✅ 会員登録ページ（API連携）
 - ✅ パスワードリセットページ（API連携）
-- ✅ ダッシュボード（基本レイアウト）
+- ✅ ダッシュボード（API連携済み）
+- ✅ 打刻ページ（API連携済み）
+- ✅ ガントチャートページ（API連携済み）
+- ✅ 申請・承認ページ（API連携済み）
+- ✅ 従業員管理ページ（API連携済み）
+- ✅ 部署管理ページ（API連携済み）
+- ✅ 企業設定ページ（API連携済み）
+- ✅ レポートページ（API連携済み）
+- ✅ 給与明細ページ（API連携済み）
+- ✅ 監査ログページ（API連携済み）
 - ✅ 16ページのHTML構造
 
 #### 7. コアフレームワーク
@@ -80,64 +159,27 @@
 ### 🚧 実装中・部分実装
 
 #### 1. 従業員招待機能
-- ⚠️ データベーススキーマは準備済み
-- ❌ API未実装
+- ✅ データベーススキーマは準備済み
+- ✅ API実装済み (`POST /employees/invite`)
+- ❌ メール送信機能未実装（トークン生成のみ）
+
+#### 2. 勤務セッション自動生成
+- ⚠️ テーブルは準備済み
+- ❌ 打刻記録からの自動生成未実装（手動生成が必要）
+
+#### 3. 通知送信機能
+- ✅ 通知テーブルは準備済み
+- ✅ 通知API実装済み
 - ❌ メール送信機能未実装
+- ❌ 通知スケジューラー未実装
+
+#### 4. 非同期ジョブ管理
+- ⚠️ テーブルは準備済み（import_jobs, export_jobs）
+- ❌ ジョブキュー実装未実装（同期処理）
 
 ---
 
 ### ❌ 未実装（仕様書に定義）
-
-#### 1. 打刻機能
-- ❌ 打刻API (`POST /punches`)
-- ❌ 代理打刻API (`POST /punches/proxy`)
-- ❌ 打刻一覧取得 (`GET /punches`)
-- ❌ 打刻検証（順序、重複、未来日時）
-- ❌ オフライン対応
-
-#### 2. 勤務セッション・タイムシート
-- ❌ 勤務セッション生成
-- ❌ タイムシート集計（日/週/月次）
-- ❌ タイムシート承認フロー
-- ❌ タイムシートAPI (`GET /timesheets`, `POST /timesheets/{id}/submit`, etc.)
-
-#### 3. 申請・承認機能
-- ❌ 申請作成 (`POST /requests`)
-- ❌ 申請一覧取得 (`GET /requests`)
-- ❌ 申請承認 (`POST /requests/{id}/approve`)
-- ❌ 申請差戻し (`POST /requests/{id}/reject`)
-- ❌ 承認フロー定義
-
-#### 4. 就業ルール管理
-- ❌ 営業時間設定 (`GET/POST /business-hours`)
-- ❌ 就業ルールセット (`GET/POST /rulesets`)
-- ❌ 祝日カレンダー (`GET/POST /holiday-calendars`)
-- ❌ ルール計算エンジン
-
-#### 5. CSV入出力
-- ❌ CSVエクスポート (`POST /exports`)
-- ❌ CSVインポート (`POST /imports`)
-- ❌ ジョブ管理 (`GET /jobs/{id}`)
-
-#### 6. ガントチャート
-- ❌ ガントチャートデータ取得API
-- ❌ フロントエンド実装
-
-#### 7. 通知機能
-- ❌ 通知テーブルは準備済み
-- ❌ 通知API (`GET /notifications`)
-- ❌ メール送信機能
-- ❌ アプリ内通知
-
-#### 8. レポート・ダッシュボード
-- ❌ 集計レポートAPI
-- ❌ ダッシュボードKPI計算
-- ❌ フロントエンド実装
-
-#### 9. ファイル管理
-- ❌ ファイルアップロード (`POST /files/upload`)
-- ❌ ファイル取得 (`GET /files/{id}`)
-- ❌ ロゴアップロード
 
 #### 10. MFA（多要素認証）
 - ❌ MFA有効化
@@ -179,6 +221,8 @@
 - `POST /auth/password-reset` - パスワードリセット要求
 - `POST /auth/password-reset/verify` - パスワードリセット実行
 - `GET /auth/me` - 現在のユーザー情報取得
+- `PUT /auth/me` - プロフィール更新
+- `POST /auth/password-change` - パスワード変更
 
 ### テナント管理
 - `GET /tenants` - テナント一覧
@@ -191,6 +235,7 @@
 - `POST /employees` - 従業員作成
 - `PUT /employees/{id}` - 従業員更新
 - `DELETE /employees/{id}` - 従業員削除
+- `POST /employees/invite` - 従業員招待
 
 ### 部署管理
 - `GET /departments` - 部署一覧
@@ -199,38 +244,106 @@
 - `PUT /departments/{id}` - 部署更新
 - `DELETE /departments/{id}` - 部署削除
 
+### 打刻管理
+- `GET /punches` - 打刻一覧（ページング、フィルタ対応）
+- `POST /punches` - 打刻記録作成
+- `POST /punches/proxy` - 代理打刻
+
+### 申請・承認
+- `GET /requests` - 申請一覧（ページング、フィルタ対応）
+- `GET /requests/{id}` - 申請詳細
+- `POST /requests` - 申請作成
+- `POST /requests/{id}/approve` - 申請承認
+- `POST /requests/{id}/reject` - 申請差戻し
+
+### タイムシート
+- `GET /timesheets` - タイムシート一覧（ページング、フィルタ対応）
+- `GET /timesheets/{id}` - タイムシート詳細
+- `POST /timesheets/{id}/submit` - タイムシート申請
+- `POST /timesheets/{id}/approve` - タイムシート承認
+- `POST /timesheets/{id}/reject` - タイムシート差戻し
+
+### 就業ルール管理
+- `GET /business-hours` - 営業時間一覧
+- `PUT /business-hours` - 営業時間更新
+- `GET /rule-sets/current` - 現在の就業ルール取得
+- `PUT /rule-sets/current` - 就業ルール更新
+- `GET /holidays` - 祝日カレンダー一覧
+- `POST /holidays` - 祝日作成
+- `GET /holidays/{id}` - 祝日詳細
+- `PUT /holidays/{id}` - 祝日更新
+- `DELETE /holidays/{id}` - 祝日削除
+
+### レポート・ダッシュボード
+- `GET /reports/summary` - 集計レポート取得
+- `GET /reports/export/attendance` - 勤怠明細エクスポート
+- `GET /dashboard/stats` - ダッシュボード統計
+- `GET /dashboard/today-punches` - 今日の打刻状況
+- `GET /dashboard/pending-requests` - 承認待ち申請
+
+### 給与明細
+- `GET /payslips` - 給与明細一覧
+- `GET /payslips/{employee_id}/{period}` - 給与明細詳細
+
+### 監査ログ
+- `GET /audit-logs` - 監査ログ一覧（ページング、フィルタ対応）
+- `GET /audit-logs/{id}` - 監査ログ詳細
+
+### 通知
+- `GET /notifications` - 通知一覧（ページング、フィルタ対応）
+- `PUT /notifications/{id}/read` - 通知既読
+- `PUT /notifications/settings` - 通知設定更新（未実装）
+
+### ファイル管理
+- `POST /files/upload` - ファイルアップロード
+- `GET /files/{id}` - ファイル情報取得
+- `GET /files/{id}/download` - ファイルダウンロード
+- `DELETE /files/{id}` - ファイル削除
+
 ---
 
 ## 🎯 次の実装優先順位
 
-### Phase 1: コア機能（高優先度）
-1. **打刻機能**
-   - 打刻API実装
-   - 打刻検証ロジック
-   - 打刻一覧取得
+### Phase 1: コア機能の完成（高優先度）
+1. **勤務セッション自動生成**
+   - 打刻記録から勤務セッション自動生成
+   - 異常検知ロジック
+   - バッチ処理実装
 
-2. **勤務セッション生成**
-   - 打刻記録から勤務セッション生成
-   - 異常検知
+2. **タイムシート集計機能**
+   - 日/週/月次集計の自動計算
+   - タイムシート自動作成
 
-3. **タイムシート集計**
-   - 日/週/月次集計
-   - タイムシート承認フロー
+### Phase 2: 拡張機能（中優先度）
+3. **通知送信機能**
+   - メール送信機能実装
+   - 通知スケジューラー実装
+   - リマインド機能
 
-### Phase 2: 申請・承認（中優先度）
-4. **申請機能**
-   - 申請作成・一覧・承認・差戻し
+4. **非同期ジョブ管理**
+   - ジョブキュー実装
+   - バックグラウンド処理
+   - ジョブ状態管理
 
-5. **承認フロー**
-   - 承認フロー定義
-   - 多段階承認
+5. **MFA（多要素認証）**
+   - TOTP実装
+   - QRコード生成
+   - バックアップコード
 
 ### Phase 3: その他機能（低優先度）
-6. **就業ルール管理**
-7. **CSV入出力**
-8. **ガントチャート**
-9. **通知機能**
-10. **レポート・ダッシュボード**
+6. **セッション管理（詳細）**
+   - セッション一覧取得
+   - セッション削除
+   - 同時ログイン制限
+
+7. **従業員招待（メール送信）**
+   - メール送信機能
+   - 招待トークン検証
+   - 招待受け入れフロー
+
+8. **テナントロゴアップロード**
+   - 専用エンドポイント実装
+   - 画像リサイズ機能
 
 ---
 
@@ -292,5 +405,5 @@ Cookie: PHPSESSID=<session_id>
 
 ---
 
-最終更新: 2025-01-15
+最終更新: 2025-12-03
 

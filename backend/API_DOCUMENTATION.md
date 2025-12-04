@@ -427,6 +427,332 @@ Cookie: PHPSESSID=<session_id>
 
 ---
 
+## 申請・承認管理
+
+### 申請作成
+```http
+POST /requests
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "type": "edit",
+  "target_date": "2024-01-15",
+  "payload": {
+    "clock_in": "08:30",
+    "clock_out": "18:00"
+  },
+  "reason": "出勤時刻の修正",
+  "attachment_paths": []
+}
+```
+
+### 申請一覧取得
+```http
+GET /requests?page=1&limit=20&status=pending&type=edit
+Cookie: PHPSESSID=<session_id>
+```
+
+### 申請詳細取得
+```http
+GET /requests/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+### 申請承認
+```http
+POST /requests/{id}/approve
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "comment": "承認します"
+}
+```
+
+### 申請差戻し
+```http
+POST /requests/{id}/reject
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "rejection_reason": "理由を確認してください"
+}
+```
+
+---
+
+## タイムシート管理
+
+### タイムシート一覧取得
+```http
+GET /timesheets?page=1&limit=20&employee_id=uuid&status=submitted&period_from=2024-01-01&period_to=2024-01-31
+Cookie: PHPSESSID=<session_id>
+```
+
+**クエリパラメータ:**
+- `page`: ページ番号（デフォルト: 1）
+- `limit`: 1ページあたりの件数（デフォルト: 20）
+- `employee_id`: 従業員IDでフィルタ
+- `status`: ステータスでフィルタ (`draft`, `submitted`, `approved`, `rejected`)
+- `period_from`: 期間開始日
+- `period_to`: 期間終了日
+
+### タイムシート詳細取得
+```http
+GET /timesheets/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+### タイムシート申請
+```http
+POST /timesheets/{id}/submit
+Cookie: PHPSESSID=<session_id>
+```
+
+**権限:**
+- Employeeの場合は自分のタイムシートのみ申請可能
+
+### タイムシート承認
+```http
+POST /timesheets/{id}/approve
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "comment": "承認します"
+}
+```
+
+**権限:**
+- CompanyAdmin, Manager, Professional のみ
+
+### タイムシート差戻し
+```http
+POST /timesheets/{id}/reject
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "rejection_reason": "差戻し理由"
+}
+```
+
+**権限:**
+- CompanyAdmin, Manager, Professional のみ
+
+---
+
+## 就業ルール管理
+
+### 営業時間取得
+```http
+GET /business-hours?scope_type=company
+Cookie: PHPSESSID=<session_id>
+```
+
+### 営業時間更新
+```http
+PUT /business-hours
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "business_hours": [
+    {
+      "weekday": 1,
+      "start_time": "09:00",
+      "end_time": "18:00"
+    }
+  ]
+}
+```
+
+### 現在の就業ルール取得
+```http
+GET /rule-sets/current
+Cookie: PHPSESSID=<session_id>
+```
+
+### 就業ルール更新
+```http
+PUT /rule-sets/current
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "name": "基本ルール",
+  "config": {
+    "rounding": {
+      "start": 15,
+      "end": 15,
+      "total": 15
+    }
+  }
+}
+```
+
+### 祝日カレンダー一覧取得
+```http
+GET /holidays?scope_type=company
+Cookie: PHPSESSID=<session_id>
+```
+
+### 祝日作成
+```http
+POST /holidays
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "scope_type": "company",
+  "date": "2024-01-01",
+  "name": "元日",
+  "type": "holiday"
+}
+```
+
+### 祝日更新
+```http
+PUT /holidays/{id}
+Content-Type: application/json
+Cookie: PHPSESSID=<session_id>
+
+{
+  "name": "更新後の祝日名",
+  "type": "company_holiday"
+}
+```
+
+### 祝日削除
+```http
+DELETE /holidays/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+---
+
+## レポート・ダッシュボード
+
+### 集計レポート取得
+```http
+GET /reports/summary?period_type=monthly&start_date=2024-01-01&end_date=2024-01-31&dept_id=uuid
+Cookie: PHPSESSID=<session_id>
+```
+
+### ダッシュボード統計取得
+```http
+GET /dashboard/stats
+Cookie: PHPSESSID=<session_id>
+```
+
+### 今日の打刻状況取得
+```http
+GET /dashboard/today-punches
+Cookie: PHPSESSID=<session_id>
+```
+
+### 承認待ち申請取得
+```http
+GET /dashboard/pending-requests?limit=10
+Cookie: PHPSESSID=<session_id>
+```
+
+---
+
+## 給与明細
+
+### 給与明細一覧取得
+```http
+GET /payslips?period=2024-01&employee_id=uuid
+Cookie: PHPSESSID=<session_id>
+```
+
+### 給与明細詳細取得
+```http
+GET /payslips/{employee_id}/{period}
+Cookie: PHPSESSID=<session_id>
+```
+
+**例:** `GET /payslips/uuid/2024-01`
+
+---
+
+## 監査ログ
+
+### 監査ログ一覧取得
+```http
+GET /audit-logs?page=1&limit=50&action=create&entity=employee&start_date=2024-01-01&end_date=2024-01-31
+Cookie: PHPSESSID=<session_id>
+```
+
+**権限:**
+- SystemAdmin, CompanyAdmin, Professional のみ
+
+### 監査ログ詳細取得
+```http
+GET /audit-logs/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+**権限:**
+- SystemAdmin, CompanyAdmin, Professional のみ
+
+---
+
+## 通知管理
+
+### 通知一覧取得
+```http
+GET /notifications?page=1&limit=20&unread_only=true&type=request_approved
+Cookie: PHPSESSID=<session_id>
+```
+
+### 通知既読
+```http
+PUT /notifications/{id}/read
+Cookie: PHPSESSID=<session_id>
+```
+
+---
+
+## ファイル管理
+
+### ファイルアップロード
+```http
+POST /files/upload
+Content-Type: multipart/form-data
+Cookie: PHPSESSID=<session_id>
+
+entity_type: request_attachment
+entity_id: uuid
+file: (ファイル)
+```
+
+### ファイル情報取得
+```http
+GET /files/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+### ファイルダウンロード
+```http
+GET /files/{id}/download
+Cookie: PHPSESSID=<session_id>
+```
+
+### ファイル削除
+```http
+DELETE /files/{id}
+Cookie: PHPSESSID=<session_id>
+```
+
+**権限:**
+- CompanyAdmin, Professional のみ
+
+---
+
 ## エラーレスポンス
 
 ```json
@@ -455,12 +781,23 @@ Cookie: PHPSESSID=<session_id>
 ## 認証が必要なエンドポイント
 
 以下のエンドポイントは認証が必要です：
-- `/auth/me`
+- `/auth/me`, `/auth/me` (PUT), `/auth/password-change`
 - `/tenants/*`
 - `/employees/*`
 - `/departments/*`
 - `/punches` (GET, POST)
 - `/punches/proxy` (POST)
+- `/requests/*`
+- `/timesheets/*`
+- `/business-hours` (GET, PUT)
+- `/rule-sets/current` (GET, PUT)
+- `/holidays/*`
+- `/reports/*`
+- `/dashboard/*`
+- `/payslips/*`
+- `/audit-logs/*`
+- `/notifications/*`
+- `/files/*`
 
 認証にはセッションCookie（`PHPSESSID`）を使用します。
 
@@ -512,5 +849,5 @@ curl -X GET "http://localhost:8080/api.php/punches?page=1&limit=20&from=2024-01-
 
 ---
 
-最終更新: 2025-12-02
+最終更新: 2025-12-03
 

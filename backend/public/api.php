@@ -48,6 +48,9 @@ use App\Controllers\ReportController;
 use App\Controllers\PayslipController;
 use App\Controllers\AuditLogController;
 use App\Controllers\DashboardController;
+use App\Controllers\TimesheetController;
+use App\Controllers\NotificationController;
+use App\Controllers\FileController;
 use App\Controllers\DevController;
 
 // リクエストとレスポンスのインスタンス作成
@@ -307,6 +310,72 @@ $router->post('/requests/{id}/approve', [RequestController::class, 'approve'], [
     }
 ]);
 $router->post('/requests/{id}/reject', [RequestController::class, 'reject'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// タイムシート管理
+$router->get('/timesheets', [TimesheetController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/timesheets/{id}', [TimesheetController::class, 'show'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->post('/timesheets/{id}/submit', [TimesheetController::class, 'submit'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->post('/timesheets/{id}/approve', [TimesheetController::class, 'approve'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->post('/timesheets/{id}/reject', [TimesheetController::class, 'reject'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// 通知管理
+$router->get('/notifications', [NotificationController::class, 'index'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->put('/notifications/{id}/read', [NotificationController::class, 'markAsRead'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->put('/notifications/settings', [NotificationController::class, 'updateSettings'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+
+// ファイル管理
+$router->post('/files/upload', [FileController::class, 'upload'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/files/{id}', [FileController::class, 'show'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->get('/files/{id}/download', [FileController::class, 'download'], [
+    function (Request $req, Response $res) {
+        return AuthMiddleware::requireAuth($req, $res);
+    }
+]);
+$router->delete('/files/{id}', [FileController::class, 'delete'], [
     function (Request $req, Response $res) {
         return AuthMiddleware::requireAuth($req, $res);
     }
