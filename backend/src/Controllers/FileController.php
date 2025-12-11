@@ -138,14 +138,14 @@ class FileController
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
-            $response->error('INTERNAL_ERROR', 'ファイルの保存に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'ファイルの保存に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
             // アップロードしたファイルを削除
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
-            $response->error('INTERNAL_ERROR', 'ファイルの保存に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'ファイルの保存に失敗しました', $e, [], 500);
         }
     }
 
@@ -273,10 +273,10 @@ class FileController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'ファイルの削除に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'ファイルの削除に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'ファイルの削除に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'ファイルの削除に失敗しました', $e, [], 500);
         }
     }
 }

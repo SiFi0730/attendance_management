@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\PunchType;
+use App\Core\DepartmentHierarchy;
 use App\Middleware\VirtualTimeMiddleware;
 use PDO;
 
@@ -167,10 +170,10 @@ class PunchController
                 return;
             }
             
-            $response->error('INTERNAL_ERROR', '打刻の記録に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '打刻の記録に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '打刻の記録に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '打刻の記録に失敗しました', $e, [], 500);
         }
     }
 
@@ -185,7 +188,7 @@ class PunchController
         $role = $request->getParam('role');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Manager', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::MANAGER, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '代理打刻の権限がありません', [], 403);
             return;
         }
@@ -258,9 +261,12 @@ class PunchController
         }
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮した配下従業員のチェック
-            // 現時点では全従業員を許可
+        if ($role === Role::MANAGER) {
+            // 配下従業員の代理打刻のみ可能
+            if (!DepartmentHierarchy::canManageEmployee($pdo, $tenantId, $userId, $employeeId)) {
+                $response->error('FORBIDDEN', 'この従業員の代理打刻を行う権限がありません', [], 403);
+                return;
+            }
         }
 
         // 打刻検証
@@ -354,10 +360,10 @@ class PunchController
                 return;
             }
             
-            $response->error('INTERNAL_ERROR', '代理打刻の記録に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '代理打刻の記録に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '代理打刻の記録に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '代理打刻の記録に失敗しました', $e, [], 500);
         }
     }
 
@@ -388,7 +394,7 @@ class PunchController
             $params['employee_id'] = $employeeId;
         } else {
             // Employeeの場合は自分の打刻のみ
-            if ($role === 'Employee') {
+            if ($role === Role::EMPLOYEE) {
                 $stmt = $pdo->prepare("
                     SELECT id FROM employee_profiles 
                     WHERE user_id = :user_id AND tenant_id = :tenant_id AND deleted_at IS NULL

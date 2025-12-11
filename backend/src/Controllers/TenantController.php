@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -25,7 +26,7 @@ class TenantController
         $pdo = Database::getInstance();
 
         // SystemAdminの場合は全テナントを取得
-        if ($role === 'SystemAdmin') {
+        if ($role === Role::SYSTEM_ADMIN) {
             $stmt = $pdo->prepare("
                 SELECT id, name, timezone, locale, status, logo_path, created_at, updated_at
                 FROM tenants
@@ -93,7 +94,7 @@ class TenantController
         $userId = $request->getParam('user_id');
 
         // 権限チェック（CompanyAdmin以上のみ）
-        if ($role !== 'SystemAdmin' && $role !== 'CompanyAdmin') {
+        if ($role !== Role::SYSTEM_ADMIN && $role !== Role::COMPANY_ADMIN) {
             $response->error('FORBIDDEN', 'テナントを更新する権限がありません', [], 403);
             return;
         }
@@ -185,7 +186,7 @@ class TenantController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'テナントの更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'テナントの更新に失敗しました', $e, [], 500);
         }
     }
 }

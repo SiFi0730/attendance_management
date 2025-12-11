@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\Status;
+use App\Core\DepartmentHierarchy;
 use PDO;
 
 /**
@@ -33,9 +36,15 @@ class EmployeeController
         $params = ['tenant_id' => $tenantId];
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮した配下従業員の取得
-            // 現時点では全従業員を返す
+        if ($role === Role::MANAGER) {
+            $condition = DepartmentHierarchy::getSubordinateEmployeeCondition($pdo, $tenantId, $userId, 'ep.id');
+            if ($condition['where'] === '1=0') {
+                // 配下従業員がいない場合は該当なし
+                $where[] = '1=0';
+            } else {
+                $where[] = $condition['where'];
+                $params = array_merge($params, $condition['params']);
+            }
         }
 
         $status = $request->getQuery('status');
@@ -133,7 +142,7 @@ class EmployeeController
         }
 
         // Employeeの場合は自分の情報のみアクセス可能
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND id = :id
@@ -268,7 +277,7 @@ class EmployeeController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '従業員の作成に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '従業員の作成に失敗しました', $e, [], 500);
         }
     }
 
@@ -299,7 +308,7 @@ class EmployeeController
         }
 
         // Employeeの場合は自分の情報のみ更新可能
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND id = :id
@@ -309,7 +318,7 @@ class EmployeeController
                 $response->error('FORBIDDEN', 'この従業員情報を更新する権限がありません', [], 403);
                 return;
             }
-        } elseif (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        } elseif (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '従業員を更新する権限がありません', [], 403);
             return;
         }
@@ -362,7 +371,7 @@ class EmployeeController
                 $updateFields[] = "work_location_tz = :work_location_tz";
                 $params['work_location_tz'] = $workLocationTz;
             }
-            if ($status !== null && in_array($status, ['active', 'on_leave', 'retired'])) {
+            if ($status !== null && in_array($status, [Status::EMPLOYEE_ACTIVE, Status::EMPLOYEE_ON_LEAVE, Status::EMPLOYEE_RETIRED])) {
                 $updateFields[] = "status = :status";
                 $params['status'] = $status;
             }
@@ -424,7 +433,7 @@ class EmployeeController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '従業員の更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '従業員の更新に失敗しました', $e, [], 500);
         }
     }
 
@@ -489,7 +498,7 @@ class EmployeeController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '従業員の削除に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '従業員の削除に失敗しました', $e, [], 500);
         }
     }
 
@@ -504,7 +513,7 @@ class EmployeeController
         $userId = $request->getParam('user_id');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '従業員を招待する権限がありません', [], 403);
             return;
         }
@@ -529,7 +538,7 @@ class EmployeeController
             return;
         }
 
-        $validRoles = ['Employee', 'Manager', 'CompanyAdmin'];
+        $validRoles = [Role::EMPLOYEE, Role::MANAGER, Role::COMPANY_ADMIN];
         if (!in_array($userRole, $validRoles)) {
             $response->error('VALIDATION_ERROR', '無効な役割です', [], 400);
             return;
@@ -667,7 +676,7 @@ class EmployeeController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '従業員の招待に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '従業員の招待に失敗しました', $e, [], 500);
         }
     }
 }

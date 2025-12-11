@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -23,7 +24,7 @@ class AuditLogController
         $userId = $request->getParam('user_id');
 
         // 権限チェック（SystemAdmin, CompanyAdmin, Professionalのみ）
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '監査ログを閲覧する権限がありません', [], 403);
             return;
         }
@@ -45,7 +46,7 @@ class AuditLogController
         $params = [];
 
         // SystemAdminの場合は全テナント、それ以外は自分のテナントのみ
-        if ($role === 'SystemAdmin') {
+        if ($role === Role::SYSTEM_ADMIN) {
             // 全テナントを対象
         } else {
             $where[] = "al.tenant_id = :tenant_id";

@@ -85,7 +85,7 @@ class DevController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'データベースのリセットに失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'データベースのリセットに失敗しました', $e, [], 500);
         }
     }
 }

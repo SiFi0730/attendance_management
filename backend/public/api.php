@@ -3,13 +3,6 @@
  * 勤怠管理システム - APIエントリーポイント
  */
 
-// エラーレポート設定
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-
-// タイムゾーン設定
-date_default_timezone_set('Asia/Tokyo');
-
 // オートローダー（Composer）
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -17,8 +10,52 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
-// CORS設定（開発環境）
+// エラーレポート設定（環境変数で制御）
+$appEnv = $_ENV['APP_ENV'] ?? 'development';
+$appDebug = filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+if ($appEnv === 'production') {
+    error_reporting(0);
+    ini_set('display_errors', '0');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', $appDebug ? '1' : '0');
+}
+
+// タイムゾーン設定
+date_default_timezone_set('Asia/Tokyo');
+
+// CORS設定（環境変数で制御）
+$allowedOrigins = [];
+if (isset($_ENV['CORS_ALLOWED_ORIGINS'])) {
+    $allowedOrigins = explode(',', $_ENV['CORS_ALLOWED_ORIGINS']);
+    $allowedOrigins = array_map('trim', $allowedOrigins);
+}
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+// 開発環境では localhost を許可
+if ($appEnv !== 'production') {
+    if (empty($allowedOrigins)) {
+        $allowedOrigins = ['http://localhost:8080', 'http://127.0.0.1:8080'];
+    }
+    // 開発環境ではリクエスト元のオリジンを許可（セキュリティリスクあり、本番では使用不可）
+    if (empty($origin) || !in_array($origin, $allowedOrigins)) {
+        // 開発環境のみ、リクエスト元を許可（本番環境では削除すべき）
+        if ($appEnv === 'development' && !empty($origin)) {
+            $allowedOrigins[] = $origin;
+        }
+    }
+}
+
+if (in_array($origin, $allowedOrigins)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+} elseif ($appEnv === 'development' && empty($allowedOrigins)) {
+    // 開発環境で設定がない場合はワイルドカードを許可（本番では使用不可）
 header('Access-Control-Allow-Origin: *');
+}
+
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Tenant-ID, X-Request-ID');
 

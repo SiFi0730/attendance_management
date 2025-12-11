@@ -75,6 +75,31 @@ class Response
     }
 
     /**
+     * 例外を含むエラーレスポンスを送信（本番環境では詳細を隠蔽）
+     */
+    public function errorWithException(string $code, string $baseMessage, \Exception $exception, array $details = [], int $statusCode = 500): void
+    {
+        $appEnv = $_ENV['APP_ENV'] ?? 'development';
+        $appDebug = filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        // 本番環境ではエラー詳細を隠蔽
+        if ($appEnv === 'production') {
+            // ログには記録
+            error_log($baseMessage . ': ' . $exception->getMessage());
+            error_log('Stack trace: ' . $exception->getTraceAsString());
+            // ユーザーには詳細を返さない
+            $this->error($code, $baseMessage, $details, $statusCode);
+        } else {
+            // 開発環境では詳細を返す
+            $message = $baseMessage;
+            if ($appDebug) {
+                $message .= ': ' . $exception->getMessage();
+            }
+            $this->error($code, $message, $details, $statusCode);
+        }
+    }
+
+    /**
      * ページング付きレスポンスを送信
      */
     public function paginated(array $data, int $total, int $page, int $limit): void

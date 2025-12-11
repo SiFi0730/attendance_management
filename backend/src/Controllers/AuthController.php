@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -12,6 +13,39 @@ use PDO;
  */
 class AuthController
 {
+    /**
+     * ユーザーのテナントIDと役割を取得
+     * 
+     * @param PDO $pdo データベース接続
+     * @param string $userId ユーザーID
+     * @return array|null テナントIDと役割を含む配列、見つからない場合はnull
+     */
+    private function getUserRoleAssignment(PDO $pdo, string $userId): ?array
+    {
+        $stmt = $pdo->prepare("
+            SELECT r.tenant_id, r.role
+            FROM role_assignments r
+            WHERE r.user_id = :user_id AND r.deleted_at IS NULL
+            ORDER BY 
+                CASE r.role
+                    WHEN :role_system_admin THEN 1
+                    WHEN :role_company_admin THEN 2
+                    WHEN :role_professional THEN 3
+                    WHEN :role_manager THEN 4
+                    WHEN :role_employee THEN 5
+                END
+            LIMIT 1
+        ");
+        $stmt->execute([
+            'user_id' => $userId,
+            'role_system_admin' => Role::SYSTEM_ADMIN,
+            'role_company_admin' => Role::COMPANY_ADMIN,
+            'role_professional' => Role::PROFESSIONAL,
+            'role_manager' => Role::MANAGER,
+            'role_employee' => Role::EMPLOYEE,
+        ]);
+        return $stmt->fetch() ?: null;
+    }
     /**
      * ログイン
      * POST /auth/login
@@ -48,22 +82,7 @@ class AuthController
         $_SESSION['user_id'] = $user['id'];
 
         // テナントIDと役割を取得（role_assignmentsから）
-        $stmt = $pdo->prepare("
-            SELECT r.tenant_id, r.role
-            FROM role_assignments r
-            WHERE r.user_id = :user_id AND r.deleted_at IS NULL
-            ORDER BY 
-                CASE r.role
-                    WHEN 'SystemAdmin' THEN 1
-                    WHEN 'CompanyAdmin' THEN 2
-                    WHEN 'Professional' THEN 3
-                    WHEN 'Manager' THEN 4
-                    WHEN 'Employee' THEN 5
-                END
-            LIMIT 1
-        ");
-        $stmt->execute(['user_id' => $user['id']]);
-        $roleAssignment = $stmt->fetch();
+        $roleAssignment = $this->getUserRoleAssignment($pdo, $user['id']);
 
         $tenantId = $roleAssignment['tenant_id'] ?? null;
         $role = $roleAssignment['role'] ?? 'Employee';
@@ -87,7 +106,6 @@ class AuthController
                 'tenant_id' => $tenantId,
                 'role' => $role,
             ],
-            'session_id' => session_id(),
         ], 'ログインに成功しました');
     }
 
@@ -129,22 +147,7 @@ class AuthController
         }
 
         // テナントIDと役割を取得
-        $stmt = $pdo->prepare("
-            SELECT r.tenant_id, r.role
-            FROM role_assignments r
-            WHERE r.user_id = :user_id AND r.deleted_at IS NULL
-            ORDER BY 
-                CASE r.role
-                    WHEN 'SystemAdmin' THEN 1
-                    WHEN 'CompanyAdmin' THEN 2
-                    WHEN 'Professional' THEN 3
-                    WHEN 'Manager' THEN 4
-                    WHEN 'Employee' THEN 5
-                END
-            LIMIT 1
-        ");
-        $stmt->execute(['user_id' => $userId]);
-        $roleAssignment = $stmt->fetch();
+        $roleAssignment = $this->getUserRoleAssignment($pdo, $userId);
 
         $tenantId = $roleAssignment['tenant_id'] ?? null;
         $role = $roleAssignment['role'] ?? 'Employee';
@@ -309,7 +312,7 @@ class AuthController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '会員登録に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '会員登録に失敗しました', $e, [], 500);
         }
     }
 
@@ -382,11 +385,18 @@ class AuthController
         ]);
 
         // TODO: メール送信機能を実装
-        // 開発環境ではトークンをレスポンスに含める（本番環境では削除）
+        // 環境変数で制御（開発環境のみトークンをレスポンスに含める）
+        $appEnv = $_ENV['APP_ENV'] ?? 'development';
+        $appDebug = filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        
+        if ($appEnv === 'development' && $appDebug) {
         $response->success([
-            'token' => $token, // 開発環境のみ
+                'token' => $token,
             'expires_at' => $expiresAt,
         ], 'パスワードリセットメールを送信しました');
+        } else {
+            $response->success(null, 'パスワードリセットメールを送信しました');
+        }
     }
 
     /**
@@ -580,22 +590,7 @@ class AuthController
             $updatedUser = $stmt->fetch();
 
             // テナントIDと役割を取得
-            $stmt = $pdo->prepare("
-                SELECT r.tenant_id, r.role
-                FROM role_assignments r
-                WHERE r.user_id = :user_id AND r.deleted_at IS NULL
-                ORDER BY 
-                    CASE r.role
-                        WHEN 'SystemAdmin' THEN 1
-                        WHEN 'CompanyAdmin' THEN 2
-                        WHEN 'Professional' THEN 3
-                        WHEN 'Manager' THEN 4
-                        WHEN 'Employee' THEN 5
-                    END
-                LIMIT 1
-            ");
-            $stmt->execute(['user_id' => $userId]);
-            $roleAssignment = $stmt->fetch();
+            $roleAssignment = $this->getUserRoleAssignment($pdo, $userId);
 
             $tenantId = $roleAssignment['tenant_id'] ?? null;
             $role = $roleAssignment['role'] ?? 'Employee';
@@ -611,7 +606,7 @@ class AuthController
             ], 'プロフィールを更新しました');
 
         } catch (\Exception $e) {
-            $response->error('INTERNAL_ERROR', 'プロフィールの更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'プロフィールの更新に失敗しました', $e, [], 500);
         }
     }
 
@@ -715,7 +710,7 @@ class AuthController
             $response->success(null, 'パスワードを変更しました');
 
         } catch (\Exception $e) {
-            $response->error('INTERNAL_ERROR', 'パスワードの変更に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'パスワードの変更に失敗しました', $e, [], 500);
         }
     }
 }

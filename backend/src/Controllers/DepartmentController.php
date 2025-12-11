@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -70,7 +71,7 @@ class DepartmentController
         $userId = $request->getParam('user_id');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '部署を作成する権限がありません', [], 403);
             return;
         }
@@ -160,7 +161,7 @@ class DepartmentController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '部署の作成に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '部署の作成に失敗しました', $e, [], 500);
         }
     }
 
@@ -176,7 +177,7 @@ class DepartmentController
         $userId = $request->getParam('user_id');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '部署を更新する権限がありません', [], 403);
             return;
         }
@@ -292,7 +293,7 @@ class DepartmentController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '部署の更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '部署の更新に失敗しました', $e, [], 500);
         }
     }
 
@@ -308,7 +309,7 @@ class DepartmentController
         $userId = $request->getParam('user_id');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin'])) {
+        if (!Role::isAdmin($role)) {
             $response->error('FORBIDDEN', '部署を削除する権限がありません', [], 403);
             return;
         }
@@ -383,7 +384,7 @@ class DepartmentController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '部署の削除に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '部署の削除に失敗しました', $e, [], 500);
         }
     }
 }

@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\Status;
 use PDO;
 
 /**
@@ -42,7 +44,7 @@ class TimesheetController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND tenant_id = :tenant_id
@@ -169,7 +171,7 @@ class TimesheetController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND id = :employee_id
@@ -218,7 +220,7 @@ class TimesheetController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             if ($timesheet['employee_user_id'] !== $userId) {
                 $response->error('FORBIDDEN', 'このタイムシートを申請する権限がありません', [], 403);
                 return;
@@ -226,7 +228,7 @@ class TimesheetController
         }
 
         // 状態チェック
-        if ($timesheet['status'] !== 'draft') {
+        if ($timesheet['status'] !== Status::TIMESHEET_DRAFT) {
             $response->error('VALIDATION_ERROR', '下書き状態のタイムシートのみ申請できます', [], 400);
             return;
         }
@@ -237,12 +239,15 @@ class TimesheetController
             // タイムシートを申請中に更新
             $stmt = $pdo->prepare("
                 UPDATE timesheets 
-                SET status = 'submitted',
+                SET status = :status_submitted,
                     submitted_at = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
             ");
-            $stmt->execute(['id' => $id]);
+            $stmt->execute([
+                'id' => $id,
+                'status_submitted' => Status::TIMESHEET_SUBMITTED,
+            ]);
 
             $pdo->commit();
 
@@ -287,18 +292,18 @@ class TimesheetController
                 'tenant_id' => $tenantId,
                 'actor_user_id' => $userId,
                 'entity_id' => $id,
-                'before' => json_encode(['status' => 'draft']),
-                'after' => json_encode(['status' => 'submitted']),
+                'before' => json_encode(['status' => Status::TIMESHEET_DRAFT]),
+                'after' => json_encode(['status' => Status::TIMESHEET_SUBMITTED]),
             ]);
 
             $response->success($updatedTimesheet, 'タイムシートを申請しました', 200);
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの申請に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの申請に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの申請に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの申請に失敗しました', $e, [], 500);
         }
     }
 
@@ -337,7 +342,7 @@ class TimesheetController
         }
 
         // 状態チェック
-        if ($timesheet['status'] !== 'submitted') {
+        if ($timesheet['status'] !== Status::TIMESHEET_SUBMITTED) {
             $response->error('VALIDATION_ERROR', '申請中のタイムシートのみ承認できます', [], 400);
             return;
         }
@@ -348,7 +353,7 @@ class TimesheetController
             // タイムシートを承認済みに更新
             $stmt = $pdo->prepare("
                 UPDATE timesheets 
-                SET status = 'approved',
+                SET status = :status_approved,
                     approved_by = :approved_by,
                     approved_at = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
@@ -357,6 +362,7 @@ class TimesheetController
             $stmt->execute([
                 'id' => $id,
                 'approved_by' => $userId,
+                'status_approved' => Status::TIMESHEET_APPROVED,
             ]);
 
             $pdo->commit();
@@ -402,9 +408,9 @@ class TimesheetController
                 'tenant_id' => $tenantId,
                 'actor_user_id' => $userId,
                 'entity_id' => $id,
-                'before' => json_encode(['status' => 'submitted']),
+                'before' => json_encode(['status' => Status::TIMESHEET_SUBMITTED]),
                 'after' => json_encode([
-                    'status' => 'approved',
+                    'status' => Status::TIMESHEET_APPROVED,
                     'approved_by' => $userId,
                 ]),
             ]);
@@ -413,10 +419,10 @@ class TimesheetController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの承認に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの承認に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの承認に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの承認に失敗しました', $e, [], 500);
         }
     }
 
@@ -461,7 +467,7 @@ class TimesheetController
         }
 
         // 状態チェック
-        if ($timesheet['status'] !== 'submitted') {
+        if ($timesheet['status'] !== Status::TIMESHEET_SUBMITTED) {
             $response->error('VALIDATION_ERROR', '申請中のタイムシートのみ差戻しできます', [], 400);
             return;
         }
@@ -472,7 +478,7 @@ class TimesheetController
             // タイムシートを差戻しに更新
             $stmt = $pdo->prepare("
                 UPDATE timesheets 
-                SET status = 'rejected',
+                SET status = :status_rejected,
                     rejection_reason = :rejection_reason,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
@@ -480,6 +486,7 @@ class TimesheetController
             $stmt->execute([
                 'id' => $id,
                 'rejection_reason' => $rejectionReason,
+                'status_rejected' => Status::TIMESHEET_REJECTED,
             ]);
 
             $pdo->commit();
@@ -525,9 +532,9 @@ class TimesheetController
                 'tenant_id' => $tenantId,
                 'actor_user_id' => $userId,
                 'entity_id' => $id,
-                'before' => json_encode(['status' => 'submitted']),
+                'before' => json_encode(['status' => Status::TIMESHEET_SUBMITTED]),
                 'after' => json_encode([
-                    'status' => 'rejected',
+                    'status' => Status::TIMESHEET_REJECTED,
                     'rejection_reason' => $rejectionReason,
                 ]),
             ]);
@@ -536,10 +543,10 @@ class TimesheetController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの差戻しに失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの差戻しに失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', 'タイムシートの差戻しに失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', 'タイムシートの差戻しに失敗しました', $e, [], 500);
         }
     }
 }

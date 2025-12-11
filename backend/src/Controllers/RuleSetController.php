@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -71,7 +72,7 @@ class RuleSetController
         $role = $request->getParam('role');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin'])) {
+        if (!Role::isAdmin($role)) {
             $response->error('FORBIDDEN', '就業ルールを更新する権限がありません', [], 403);
             return;
         }
@@ -132,7 +133,7 @@ class RuleSetController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '就業ルールの更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '就業ルールの更新に失敗しました', $e, [], 500);
         }
     }
 }

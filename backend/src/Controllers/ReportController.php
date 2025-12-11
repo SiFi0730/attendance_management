@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\Status;
 use PDO;
 
 /**
@@ -37,8 +39,8 @@ class ReportController
         $pdo = Database::getInstance();
 
         // 従業員フィルタ
-        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = 'active'"];
-        $employeeParams = ['tenant_id' => $tenantId];
+        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = :status_active"];
+        $employeeParams = ['tenant_id' => $tenantId, 'status_active' => Status::EMPLOYEE_ACTIVE];
 
         if ($employeeId) {
             $employeeWhere[] = "ep.id = :employee_id";
@@ -49,7 +51,7 @@ class ReportController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $employeeWhere[] = "ep.user_id = :user_id";
             $employeeParams['user_id'] = $userId;
         }

@@ -1,6 +1,7 @@
 # プロジェクト全体のエラーチェック結果
 
-**チェック日時**: 2025-01-15
+**チェック日時**: 2025-01-15  
+**最終更新**: 2025-01-15（部署階層実装完了反映）
 
 ## ✅ 構文エラー
 
@@ -31,25 +32,22 @@
 
 以下のファイルにTODOコメントが見つかりました。これらはエラーではありませんが、未実装機能を示しています：
 
-#### `backend/src/Controllers/DashboardController.php`
-- 行139: `// TODO: 部署階層を考慮`
-- 行342: `// TODO: 部署階層を考慮`
+#### ✅ 実装完了（部署階層の考慮）
+- ✅ `backend/src/Controllers/DashboardController.php` - 部署階層を考慮した実装完了
+- ✅ `backend/src/Controllers/EmployeeController.php` - 部署階層を考慮した実装完了
+- ✅ `backend/src/Controllers/RequestController.php` - 部署階層を考慮した実装完了
+- ✅ `backend/src/Controllers/PunchController.php` - 部署階層を考慮した実装完了
+- ✅ `backend/src/Core/DepartmentHierarchy.php` - 部署階層管理ヘルパークラスを作成
 
-#### `backend/src/Controllers/EmployeeController.php`
-- 行37: `// TODO: 部署階層を考慮した配下従業員の取得`
-
-#### `backend/src/Controllers/RequestController.php`
-- 行383: `// TODO: 部署階層を考慮した配下従業員のチェック`
-- 行510: `// TODO: 部署階層を考慮した配下従業員のチェック`
-
-#### `backend/src/Controllers/PunchController.php`
-- 行262: `// TODO: 部署階層を考慮した配下従業員のチェック`
-
+#### 残存するTODO（機能実装）
 #### `backend/src/Controllers/AuthController.php`
-- 行384: `// TODO: メール送信機能を実装`
+- 行387: `// TODO: メール送信機能を実装`
+  - これは機能実装のTODOで、コードレビューの対象外です
+  - パスワードリセット機能のメール送信部分の実装予定
 
 **推奨対応**: 
-- これらは将来の実装予定機能です。必要に応じて実装を進めてください。
+- 部署階層の考慮機能は実装完了しました
+- メール送信機能は将来の実装予定機能です
 
 ### 3. デバッグコード
 
@@ -83,11 +81,13 @@
 
 ### 優先度: 中
 
-2. **TODOコメントの整理**
-   - 部署階層の考慮機能を実装するか、ドキュメントに未実装機能として明記
+2. ✅ **TODOコメントの整理**
+   - ✅ 部署階層の考慮機能を実装完了
+   - `DepartmentHierarchy`ヘルパークラスを作成し、全コントローラーで適用
 
-3. **デバッグコードの整理**
-   - 本番環境向けのビルドスクリプトでデバッグコードを削除
+3. ✅ **デバッグコードの整理**
+   - ✅ 本番環境で`console.debug`を無効化する実装完了
+   - 環境変数`LOG_LEVEL`で制御可能
 
 ## ✅ 総合評価
 

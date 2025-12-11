@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\Status;
+use App\Core\DepartmentHierarchy;
 use PDO;
 
 /**
@@ -87,7 +90,7 @@ class RequestController
                     status, attachment_paths, reason, created_at, updated_at
                 ) VALUES (
                     :tenant_id, :employee_id, :type, :target_date, :payload,
-                    'pending', :attachment_paths, :reason, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :status_pending, :attachment_paths, :reason, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
                 RETURNING id
             ");
@@ -99,6 +102,7 @@ class RequestController
                 'payload' => json_encode($payload ?: []),
                 'attachment_paths' => $attachmentPaths ? json_encode($attachmentPaths) : null,
                 'reason' => $reason,
+                'status_pending' => Status::REQUEST_PENDING,
             ]);
             $result = $stmt->fetch();
             $requestId = $result['id'];
@@ -152,10 +156,10 @@ class RequestController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の作成に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の作成に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の作成に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の作成に失敗しました', $e, [], 500);
         }
     }
 
@@ -180,7 +184,7 @@ class RequestController
         $params = ['tenant_id' => $tenantId];
 
         // Employeeの場合は自分の申請のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND tenant_id = :tenant_id AND deleted_at IS NULL
@@ -322,7 +326,7 @@ class RequestController
         }
 
         // Employeeの場合は自分の申請のみアクセス可能
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND id = :employee_id
@@ -349,7 +353,7 @@ class RequestController
         $role = $request->getParam('role');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Manager', 'Professional'])) {
+        if (!Role::canApprove($role)) {
             $response->error('FORBIDDEN', '承認の権限がありません', [], 403);
             return;
         }
@@ -373,15 +377,18 @@ class RequestController
             return;
         }
 
-        if ($requestData['status'] !== 'pending') {
+        if ($requestData['status'] !== Status::REQUEST_PENDING) {
             $response->error('VALIDATION_ERROR', '申請中の申請のみ承認できます', [], 400);
             return;
         }
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮した配下従業員のチェック
-            // 現時点では全従業員を許可
+        if ($role === Role::MANAGER) {
+            // 配下従業員の申請のみ承認可能
+            if (!DepartmentHierarchy::canManageEmployee($pdo, $tenantId, $userId, $requestData['employee_id'])) {
+                $response->error('FORBIDDEN', 'この従業員の申請を承認する権限がありません', [], 403);
+                return;
+            }
         }
 
         try {
@@ -390,7 +397,7 @@ class RequestController
             // 申請を承認
             $stmt = $pdo->prepare("
                 UPDATE requests 
-                SET status = 'approved',
+                SET status = :status_approved,
                     approver_id = :approver_id,
                     decided_at = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
@@ -399,6 +406,7 @@ class RequestController
             $stmt->execute([
                 'id' => $id,
                 'approver_id' => $userId,
+                'status_approved' => Status::REQUEST_APPROVED,
             ]);
 
             $pdo->commit();
@@ -440,9 +448,9 @@ class RequestController
                 'tenant_id' => $tenantId,
                 'actor_user_id' => $userId,
                 'entity_id' => $id,
-                'before' => json_encode(['status' => 'pending']),
+                'before' => json_encode(['status' => Status::REQUEST_PENDING]),
                 'after' => json_encode([
-                    'status' => 'approved',
+                    'status' => Status::REQUEST_APPROVED,
                     'approver_id' => $userId,
                 ])
             ]);
@@ -451,10 +459,10 @@ class RequestController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の承認に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の承認に失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の承認に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の承認に失敗しました', $e, [], 500);
         }
     }
 
@@ -470,7 +478,7 @@ class RequestController
         $role = $request->getParam('role');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Manager', 'Professional'])) {
+        if (!Role::canApprove($role)) {
             $response->error('FORBIDDEN', '差戻しの権限がありません', [], 403);
             return;
         }
@@ -500,15 +508,18 @@ class RequestController
             return;
         }
 
-        if ($requestData['status'] !== 'pending') {
+        if ($requestData['status'] !== Status::REQUEST_PENDING) {
             $response->error('VALIDATION_ERROR', '申請中の申請のみ差戻しできます', [], 400);
             return;
         }
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮した配下従業員のチェック
-            // 現時点では全従業員を許可
+        if ($role === Role::MANAGER) {
+            // 配下従業員の申請のみ差戻し可能
+            if (!DepartmentHierarchy::canManageEmployee($pdo, $tenantId, $userId, $requestData['employee_id'])) {
+                $response->error('FORBIDDEN', 'この従業員の申請を差戻しする権限がありません', [], 403);
+                return;
+            }
         }
 
         try {
@@ -517,7 +528,7 @@ class RequestController
             // 申請を差戻し
             $stmt = $pdo->prepare("
                 UPDATE requests 
-                SET status = 'rejected',
+                SET status = :status_rejected,
                     approver_id = :approver_id,
                     decided_at = CURRENT_TIMESTAMP,
                     rejection_reason = :rejection_reason,
@@ -528,6 +539,7 @@ class RequestController
                 'id' => $id,
                 'approver_id' => $userId,
                 'rejection_reason' => $rejectionReason,
+                'status_rejected' => Status::REQUEST_REJECTED,
             ]);
 
             $pdo->commit();
@@ -569,9 +581,9 @@ class RequestController
                 'tenant_id' => $tenantId,
                 'actor_user_id' => $userId,
                 'entity_id' => $id,
-                'before' => json_encode(['status' => 'pending']),
+                'before' => json_encode(['status' => Status::REQUEST_PENDING]),
                 'after' => json_encode([
-                    'status' => 'rejected',
+                    'status' => Status::REQUEST_REJECTED,
                     'approver_id' => $userId,
                     'rejection_reason' => $rejectionReason,
                 ])
@@ -581,10 +593,10 @@ class RequestController
 
         } catch (\PDOException $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の差戻しに失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の差戻しに失敗しました', $e, [], 500);
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '申請の差戻しに失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '申請の差戻しに失敗しました', $e, [], 500);
         }
     }
 }

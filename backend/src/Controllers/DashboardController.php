@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
+use App\Core\Constants\Status;
+use App\Core\DepartmentHierarchy;
 use PDO;
 
 /**
@@ -34,11 +37,11 @@ class DashboardController
         $monthEnd = date('Y-m-t');
 
         // 従業員フィルタ
-        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = 'active'"];
-        $employeeParams = ['tenant_id' => $tenantId];
+        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = :status_active"];
+        $employeeParams = ['tenant_id' => $tenantId, 'status_active' => Status::EMPLOYEE_ACTIVE];
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $employeeWhere[] = "ep.user_id = :user_id";
             $employeeParams['user_id'] = $userId;
         }
@@ -131,26 +134,28 @@ class DashboardController
         $noPunchDiff = $noPunchCount - $yesterdayNoPunchCount;
 
         // 3. 承認待ち申請数
-        $requestWhere = ["r.tenant_id = :tenant_id", "r.status = 'pending'"];
+        $requestWhere = ["r.tenant_id = :tenant_id", "r.status = :status_pending"];
+        $requestParams['status_pending'] = Status::REQUEST_PENDING;
         $requestParams = ['tenant_id' => $tenantId];
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮
-        } elseif ($role === 'Employee') {
+        if ($role === Role::MANAGER) {
+            $condition = DepartmentHierarchy::getSubordinateEmployeeCondition($pdo, $tenantId, $userId, 'ep.id');
+            if ($condition['where'] === '1=0') {
+                // 配下従業員がいない場合は該当なし
+                $employeeWhere[] = '1=0';
+            } else {
+                $employeeWhere[] = $condition['where'];
+                $employeeParams = array_merge($employeeParams, $condition['params']);
+            }
+        } elseif ($role === Role::EMPLOYEE) {
             // Employeeの場合は自分の申請のみ
-            $stmt = $pdo->prepare("
+            // N+1クエリを避けるため、JOINで解決
+            $requestWhere[] = "r.employee_id IN (
                 SELECT ep.id FROM employee_profiles ep
                 WHERE ep.user_id = :user_id AND ep.tenant_id = :tenant_id
-            ");
-            $stmt->execute(['user_id' => $userId, 'tenant_id' => $tenantId]);
-            $employee = $stmt->fetch();
-            if ($employee) {
-                $requestWhere[] = "r.employee_id = :employee_id";
-                $requestParams['employee_id'] = $employee['id'];
-            } else {
-                $requestWhere[] = "1=0"; // 該当なし
-            }
+            )";
+            $requestParams['user_id'] = $userId;
         }
 
         $requestWhereClause = implode(' AND ', $requestWhere);
@@ -237,11 +242,11 @@ class DashboardController
         $todayEnd = $today . ' 23:59:59';
 
         // 従業員フィルタ
-        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = 'active'"];
-        $employeeParams = ['tenant_id' => $tenantId];
+        $employeeWhere = ["ep.tenant_id = :tenant_id", "ep.deleted_at IS NULL", "ep.status = :status_active"];
+        $employeeParams = ['tenant_id' => $tenantId, 'status_active' => Status::EMPLOYEE_ACTIVE];
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $employeeWhere[] = "ep.user_id = :user_id";
             $employeeParams['user_id'] = $userId;
         }
@@ -338,22 +343,23 @@ class DashboardController
         $params = ['tenant_id' => $tenantId];
 
         // Managerの場合は配下の従業員のみ
-        if ($role === 'Manager') {
-            // TODO: 部署階層を考慮
-        } elseif ($role === 'Employee') {
+        if ($role === Role::MANAGER) {
+            $condition = DepartmentHierarchy::getSubordinateEmployeeCondition($pdo, $tenantId, $userId, 'r.employee_id');
+            if ($condition['where'] !== '1=0') {
+                $where[] = $condition['where'];
+                $params = array_merge($params, $condition['params']);
+            } else {
+                // 配下従業員がいない場合は該当なし
+                $where[] = '1=0';
+            }
+        } elseif ($role === Role::EMPLOYEE) {
             // Employeeの場合は自分の申請のみ
-            $stmt = $pdo->prepare("
+            // N+1クエリを避けるため、JOINで解決
+            $where[] = "r.employee_id IN (
                 SELECT ep.id FROM employee_profiles ep
                 WHERE ep.user_id = :user_id AND ep.tenant_id = :tenant_id
-            ");
-            $stmt->execute(['user_id' => $userId, 'tenant_id' => $tenantId]);
-            $employee = $stmt->fetch();
-            if ($employee) {
-                $where[] = "r.employee_id = :employee_id";
-                $params['employee_id'] = $employee['id'];
-            } else {
-                $where[] = "1=0"; // 該当なし
-            }
+            )";
+            $params['user_id'] = $userId;
         }
 
         $whereClause = implode(' AND ', $where);

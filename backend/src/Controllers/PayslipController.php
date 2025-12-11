@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -37,7 +38,7 @@ class PayslipController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $employeeWhere[] = "ep.user_id = :user_id";
             $employeeParams['user_id'] = $userId;
         }
@@ -108,7 +109,7 @@ class PayslipController
         }
 
         // Employeeの場合は自分のみ
-        if ($role === 'Employee') {
+        if ($role === Role::EMPLOYEE) {
             $stmt = $pdo->prepare("
                 SELECT id FROM employee_profiles 
                 WHERE user_id = :user_id AND id = :id

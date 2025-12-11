@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles/common.css">
   <link rel="stylesheet" href="styles/components.css">
   <link rel="stylesheet" href="styles/layout.css">
+  <script src="scripts/config.js"></script>
 </head>
 <body>
   <div class="auth-layout">
@@ -77,8 +78,11 @@
     </div>
   </div>
 
+  <script src="scripts/config.js"></script>
   <script>
-    const API_BASE_URL = 'http://localhost:8080/api.php';
+    // config.jsからAPI_BASE_URLが読み込まれる
+    // またはwindow.APP_CONFIGから設定可能
+    // window.APP_CONFIG = { API_BASE_URL: 'https://api.example.com/api.php' };
 
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -113,9 +117,15 @@
         const data = await response.json();
 
         if (response.ok) {
-          // ユーザー情報をlocalStorageに保存
+          // ユーザー情報をlocalStorageに保存（必要最小限の情報のみ）
+          // セキュリティのため、機密情報は保存しない
           if (data.data && data.data.user) {
-            localStorage.setItem('user', JSON.stringify(data.data.user));
+            const userInfo = {
+              id: data.data.user.id,
+              name: data.data.user.name,
+              email: data.data.user.email
+            };
+            localStorage.setItem('user', JSON.stringify(userInfo));
           }
 
           successMessage.textContent = data.message || 'ログインに成功しました';

@@ -5,7 +5,23 @@
 // ============================================
 // ログキャプチャ機能
 // ============================================
-const LOG_CAPTURE_ENABLED = true; // ログキャプチャを有効化
+// 環境変数またはグローバル設定から読み込む
+const LOG_CAPTURE_ENABLED = (function() {
+  if (window.APP_CONFIG && window.APP_CONFIG.LOG_CAPTURE_ENABLED !== undefined) {
+    return window.APP_CONFIG.LOG_CAPTURE_ENABLED;
+  }
+  // デフォルトは開発環境で有効、本番環境では無効
+  return (window.APP_CONFIG?.APP_ENV || 'development') !== 'production';
+})();
+
+const LOG_LEVEL = (function() {
+  if (window.APP_CONFIG && window.APP_CONFIG.LOG_LEVEL) {
+    return window.APP_CONFIG.LOG_LEVEL;
+  }
+  // デフォルトは開発環境でdebug、本番環境ではerror
+  return (window.APP_CONFIG?.APP_ENV || 'development') === 'production' ? 'error' : 'debug';
+})();
+
 const LOG_STORAGE_KEY = 'attendance_logs';
 const MAX_LOG_ENTRIES = 1000; // 最大ログ数
 
@@ -89,6 +105,10 @@ function initLogCapture() {
   };
   
   console.debug = function(...args) {
+    // 本番環境ではconsole.debugを無効化
+    if (LOG_LEVEL === 'error' || LOG_LEVEL === 'warn') {
+      return; // 本番環境では何も出力しない
+    }
     captureLog('debug', args);
     originalDebug.apply(console, args);
   };
@@ -198,7 +218,11 @@ if (LOG_CAPTURE_ENABLED) {
 // ============================================
 // API設定
 // ============================================
-const API_BASE_URL = 'http://localhost:8080/api.php';
+// config.jsから読み込む（設定ファイル化）
+// 設定ファイルが読み込まれていない場合はデフォルト値を使用
+const API_BASE_URL = (typeof API_BASE_URL !== 'undefined' && API_BASE_URL) 
+  ? API_BASE_URL 
+  : (window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8080/api.php');
 
 // API呼び出し時に仮想時間をヘッダーとして送信するための共通関数
 function getApiHeaders() {

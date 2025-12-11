@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Database;
+use App\Core\Constants\Role;
 use PDO;
 
 /**
@@ -59,7 +60,7 @@ class BusinessHoursController
         $role = $request->getParam('role');
 
         // 権限チェック
-        if (!in_array($role, ['SystemAdmin', 'CompanyAdmin', 'Professional'])) {
+        if (!in_array($role, [Role::SYSTEM_ADMIN, Role::COMPANY_ADMIN, Role::PROFESSIONAL])) {
             $response->error('FORBIDDEN', '営業時間を更新する権限がありません', [], 403);
             return;
         }
@@ -125,7 +126,7 @@ class BusinessHoursController
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            $response->error('INTERNAL_ERROR', '営業時間の更新に失敗しました: ' . $e->getMessage(), [], 500);
+            $response->errorWithException('INTERNAL_ERROR', '営業時間の更新に失敗しました', $e, [], 500);
         }
     }
 }
