@@ -36,7 +36,9 @@ if %errorLevel% neq 0 (
 
 REM ユーザーの作成
 echo [2/4] ユーザーを作成中...
-psql -U postgres -c "CREATE USER attendance_user WITH PASSWORD 'attendance_password';" 2>nul
+echo データベースユーザーのパスワードを入力してください:
+set /p db_password=
+psql -U postgres -c "CREATE USER attendance_user WITH PASSWORD '%db_password%';" 2>nul
 if %errorLevel% neq 0 (
     echo ユーザーは既に存在するか、作成に失敗しました。
 ) else (
@@ -56,7 +58,7 @@ if %errorLevel% neq 0 (
 
 REM スキーマの適用
 echo [4/4] スキーマを適用中...
-echo attendance_userのパスワードを入力してください: attendance_password
+echo attendance_userのパスワードを入力してください: <上記で設定したパスワード>
 cd %~dp0
 psql -U attendance_user -d attendance_management -f schema.sql
 if %errorLevel% neq 0 (

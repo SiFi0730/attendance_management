@@ -321,7 +321,7 @@ php -S localhost:8080
 ```cmd
 psql -U attendance_user -d attendance_management -f database\schema.sql
 ```
-- パスワード: `attendance_password`
+- パスワード: データベース作成時に設定したパスワードを入力してください
 
 #### ステップ3: RLSポリシーの適用
 
@@ -352,7 +352,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=attendance_management
 DB_USER=attendance_user
-DB_PASSWORD=attendance_password
+DB_PASSWORD=<データベース作成時に設定したパスワード>
 
 APP_ENV=development
 APP_DEBUG=true
@@ -381,7 +381,7 @@ composer install
 
 2. **プロジェクトディレクトリに移動**
    ```cmd
-   cd C:\Users\shohe\Documents\96_ai_lesson\05_attendance_management
+   cd <プロジェクトディレクトリのパス>
    ```
 
 3. **起動スクリプトを実行**

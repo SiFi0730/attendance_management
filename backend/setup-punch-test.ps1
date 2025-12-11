@@ -6,10 +6,11 @@ Write-Host "=== 打刻テスト用セットアップ ===" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. ログイン
+# 注意: テスト用の認証情報です。本番環境では使用しないでください。
 Write-Host "1. ログイン中..." -ForegroundColor Yellow
 $loginBody = @{
-    email = "test@example.com"
-    password = "Test1234!"
+    email = "test@example.com"  # テスト用メールアドレス
+    password = "Test1234!"      # テスト用パスワード（本番では使用不可）
 } | ConvertTo-Json
 
 try {

@@ -119,8 +119,17 @@ $dbPassword = $_ENV['DB_PASSWORD'] ?? 'attendance_password';
         </div>
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
-            <p><strong>注意:</strong> パスワードは初回接続時に手動入力が必要な場合があります。</p>
-            <p>パスワード: <code><?php echo htmlspecialchars($dbPassword); ?></code></p>
+            <p><strong>⚠️ セキュリティ警告:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>このページは<strong>開発環境専用</strong>です。本番環境では使用しないでください。</li>
+                <li>パスワードは初回接続時に手動入力が必要な場合があります。</li>
+                <li>本番環境では、このファイルを削除するか、アクセス制限を設定してください。</li>
+            </ul>
+            <?php if (($_ENV['APP_ENV'] ?? 'development') === 'development'): ?>
+            <p style="margin-top: 10px;">開発環境パスワード: <code><?php echo htmlspecialchars($dbPassword); ?></code></p>
+            <?php else: ?>
+            <p style="margin-top: 10px; color: red;"><strong>本番環境ではパスワードを表示しません。</strong></p>
+            <?php endif; ?>
         </div>
     </div>
 </body>

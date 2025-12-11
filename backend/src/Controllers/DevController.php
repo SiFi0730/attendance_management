@@ -9,6 +9,11 @@ use PDO;
 
 /**
  * 開発用コントローラー（デバッグ機能）
+ * 
+ * ⚠️ セキュリティ警告:
+ *   このコントローラーは開発環境専用です。
+ *   本番環境では、このコントローラーへのアクセスを無効化するか、
+ *   ルーティングから削除してください。
  */
 class DevController
 {
@@ -16,7 +21,8 @@ class DevController
      * データベースリセット
      * POST /dev/reset-database
      * 
-     * 注意: 本番環境では無効化する必要があります
+     * ⚠️ 警告: 本番環境では絶対に使用しないでください。
+     *   すべてのデータが削除されます。
      */
     public function resetDatabase(Request $request, Response $response): void
     {

@@ -1,11 +1,24 @@
 <?php
 /**
- * 勤怠管理システム - エントリーポイント
+ * 勤怠管理システム - 開発環境用エントリーポイント
+ * 
+ * ⚠️ セキュリティ警告:
+ *   このファイルは開発環境専用です。
+ *   本番環境では使用しないでください。
+ *   データベース情報が表示される可能性があります。
  */
 
-// エラーレポート設定
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+// エラーレポート設定（開発環境のみ）
+$appEnv = $_ENV['APP_ENV'] ?? 'development';
+if ($appEnv === 'production') {
+    // 本番環境ではエラーを表示しない
+    error_reporting(0);
+    ini_set('display_errors', '0');
+    die('このページは開発環境専用です。');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
 
 // タイムゾーン設定
 date_default_timezone_set('Asia/Tokyo');

@@ -2,10 +2,18 @@
 
 最終更新: 2025-01-15
 
+⚠️ **注意**: このドキュメントは開発環境用の例です。本番環境では適切なURLと認証情報を使用してください。
+
 ## ベースURL
 
+**開発環境:**
 ```
 http://localhost:8080/api.php
+```
+
+**本番環境:**
+```
+https://api.yourdomain.com/api.php
 ```
 
 ## 認証
@@ -55,7 +63,7 @@ Content-Type: application/json
 
 {
   "email": "admin@example.com",
-  "password": "Password123!"
+  "password": "<ユーザーのパスワード>"
 }
 ```
 
@@ -106,7 +114,7 @@ Content-Type: application/json
 
 {
   "token": "reset_token",
-  "password": "NewPassword123!"
+  "password": "<新しい強力なパスワード>"
 }
 ```
 

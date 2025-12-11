@@ -8,7 +8,7 @@ echo.
 
 set DB_NAMES=attendance_management_test attendance_management_test1 attendance_management_test2 attendance_management_test3
 
-echo attendance_userのパスワードを入力してください: attendance_password
+echo attendance_userのパスワードを入力してください: <データベース作成時に設定したパスワード>
 echo.
 
 for %%db in (%DB_NAMES%) do (

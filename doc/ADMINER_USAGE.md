@@ -22,8 +22,10 @@ http://localhost:8080/adminer.php
 - システム: **PostgreSQL**
 - サーバー: `localhost:5432`
 - ユーザー名: `attendance_user`
-- パスワード: `attendance_password`
+- パスワード: `<データベース作成時に設定したパスワード>`
 - データベース: `attendance_management`
+
+⚠️ **注意**: このドキュメントは開発環境用です。本番環境では、Adminerへのアクセスを制限してください。
 
 ### ステップ3: データベースを選択
 
